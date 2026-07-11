@@ -282,7 +282,7 @@
                                 </div>
                             </div>
 
-                            <!-- Preço e Fornecedor -->
+                            <!-- Preço e Fornecedor com Autocomplete -->
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Preço Pago (R$)</label>
@@ -290,7 +290,10 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Fornecedor / Loja</label>
-                                    <input type="text" id="supplier" placeholder="Ex: Prime3D" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                    <input type="text" id="supplier" list="suppliers-list" placeholder="Ex: Prime3D" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                    <datalist id="suppliers-list">
+                                        <!-- Populado dinamicamente por JS -->
+                                    </datalist>
                                 </div>
                             </div>
 
@@ -823,7 +826,7 @@
                 printerId: 1,
                 printerName: "Creality Ender 3 v3 KE",
                 printerWatts: 350,
-                energyCost: 1.26, // Pré-calculado estático
+                energyCost: 1.26, 
                 energyRate: 0.85,
                 filamentsUsed: [
                     { filamentId: 1, brand: "eSUN", material: "PLA", variation: "Silk", colorName: "Ouro Radiante", colorHex: "#d97706", weightUsed: 120, cost: 16.78 }
@@ -888,10 +891,11 @@
         let printers = [];
         let brands = [];
         let variations = [];
-        let energyRatePerKwh = 0.85; // Custo médio de energia default no Brasil
+        let suppliers = []; // Novo banco de dados de fornecedores persistidos
+        let energyRatePerKwh = 0.85; 
         
-        let stockViewMode = 'grid'; // 'grid' ou 'table'
-        let printerViewMode = 'grid'; // 'grid' ou 'table'
+        let stockViewMode = 'grid'; 
+        let printerViewMode = 'grid'; 
 
         // VARIÁVEIS DE ESTADO DE ORDENAÇÃO
         let stockSortColumn = 'colorName';
@@ -943,6 +947,14 @@
                 localStorage.setItem('variations_db', JSON.stringify(variations));
             }
 
+            // Inicializando Banco de Fornecedores
+            if (localStorage.getItem('suppliers_db')) {
+                suppliers = JSON.parse(localStorage.getItem('suppliers_db'));
+            } else {
+                suppliers = ['Prime3D', 'Mercado Livre', 'Amazon', 'GTMax 3D', 'Oficial Creality'];
+                localStorage.setItem('suppliers_db', JSON.stringify(suppliers));
+            }
+
             // Inicializando Filamentos
             if (localStorage.getItem('filament_db')) {
                 filaments = JSON.parse(localStorage.getItem('filament_db'));
@@ -969,6 +981,7 @@
 
             popularSelectMarcas();
             popularSelectVariacoes();
+            popularDatalistFornecedores();
             mostrarDicasMaterial();
             popularFiltrosEstoque();
             atualizarPainel();
@@ -1196,6 +1209,18 @@
                 customInput.required = false;
             }
             mostrarDicasMaterial();
+        }
+
+        // POPULAR DATALIST DE FORNECEDORES (Autocomplete inteligente)
+        function popularDatalistFornecedores() {
+            const datalist = document.getElementById('suppliers-list');
+            if (!datalist) return;
+            datalist.innerHTML = '';
+            suppliers.sort().forEach(s => {
+                const opt = document.createElement('option');
+                opt.value = s;
+                datalist.appendChild(opt);
+            });
         }
 
 
@@ -1524,9 +1549,12 @@
                                 ` : ''}
                             </div>
 
-                            <div class="flex items-center gap-2 mt-5 pt-3 border-t border-slate-800/50">
-                                <button onclick="prepararEdicao(${f.id})" class="flex-grow bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs font-bold py-1.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5" title="Editar informações">
-                                    <i class="fa-solid fa-pen-to-square"></i> Editar Rolo
+                            <div class="flex items-center gap-1.5 mt-5 pt-3 border-t border-slate-800/50">
+                                <button onclick="prepararEdicao(${f.id})" class="flex-grow bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs font-bold py-1.5 px-2.5 rounded-lg transition flex items-center justify-center gap-1" title="Editar informações">
+                                    <i class="fa-solid fa-pen-to-square"></i> Editar
+                                </button>
+                                <button onclick="copiarFilamento(${f.id})" class="flex-grow bg-slate-850 hover:bg-indigo-950/40 hover:text-indigo-400 text-slate-300 text-xs font-bold py-1.5 px-2.5 rounded-lg transition flex items-center justify-center gap-1" title="Copiar propriedades e fornecedor para novo rolo">
+                                    <i class="fa-solid fa-copy"></i> Copiar
                                 </button>
                                 <button onclick="excluirFilamento(${f.id})" class="bg-slate-850 hover:bg-rose-950/40 hover:text-rose-400 text-slate-300 text-xs p-1.5 px-2.5 rounded-lg transition" title="Excluir rolo">
                                     <i class="fa-solid fa-trash"></i>
@@ -1603,6 +1631,9 @@
                                 <div class="flex justify-end gap-1.5">
                                     <button onclick="prepararEdicao(${f.id})" class="bg-slate-800 hover:bg-slate-750 text-indigo-400 p-1.5 rounded-lg transition text-xs" title="Editar">
                                         <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button onclick="copiarFilamento(${f.id})" class="bg-slate-800 hover:bg-indigo-950/40 text-indigo-400 p-1.5 rounded-lg transition text-xs" title="Duplicar rolo">
+                                        <i class="fa-solid fa-copy"></i>
                                     </button>
                                     <button onclick="excluirFilamento(${f.id})" class="bg-slate-800 hover:bg-rose-950/40 text-rose-400 p-1.5 rounded-lg transition text-xs" title="Excluir">
                                         <i class="fa-solid fa-trash"></i>
@@ -1687,6 +1718,13 @@
                     popularSelectVariacoes();
                     popularFiltrosCompra();
                 }
+            }
+
+            // Persistência inteligente do fornecedor
+            if (supplier !== 'Desconhecido' && !suppliers.includes(supplier)) {
+                suppliers.push(supplier);
+                localStorage.setItem('suppliers_db', JSON.stringify(suppliers));
+                popularDatalistFornecedores();
             }
 
             if (currentWeight > totalWeight) {
@@ -1774,6 +1812,54 @@
 
             mostrarDicasMaterial();
             window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // COPIAR/DUPLICAR PROPRIEDADES DE UM FILAMENTO PARA CADASTRO RÁPIDO
+        function copiarFilamento(id) {
+            const f = filaments.find(item => item.id === id);
+            if (!f) return;
+
+            // Define id como vazio para que ao salvar, torne-se um NOVO registro
+            document.getElementById('edit-id').value = '';
+            
+            if (brands.includes(f.brand)) {
+                document.getElementById('brand-select').value = f.brand;
+            } else {
+                brands.push(f.brand);
+                localStorage.setItem('brands_db', JSON.stringify(brands));
+                popularSelectMarcas();
+                document.getElementById('brand-select').value = f.brand;
+            }
+            toggleCustomBrand();
+
+            if (variations.includes(f.variation)) {
+                document.getElementById('variation').value = f.variation;
+            } else {
+                variations.push(f.variation);
+                localStorage.setItem('variations_db', JSON.stringify(variations));
+                popularSelectVariacoes();
+                document.getElementById('variation').value = f.variation;
+            }
+            toggleCustomVariation();
+
+            document.getElementById('material').value = f.material;
+            document.getElementById('color-name').value = f.colorName + ' (Cópia)';
+            document.getElementById('color-hex').value = f.colorHex;
+            document.getElementById('total-weight').value = f.totalWeight;
+            // Presume-se um novo rolo comprado idêntico, então peso atual volta ao total original
+            document.getElementById('current-weight').value = f.totalWeight;
+            document.getElementById('price').value = f.price;
+            document.getElementById('supplier').value = f.supplier === 'Desconhecido' ? '' : f.supplier;
+            document.getElementById('delivery-status').value = f.deliveryStatus || 'entregue';
+            document.getElementById('notes').value = f.notes || '';
+
+            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-copy text-indigo-500 animate-pulse"></i> Copiando Filamento`;
+            document.getElementById('submit-btn-text').textContent = 'Cadastrar Novo Rolo';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+            mostrarDicasMaterial();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            showToast("Dados do rolo e fornecedor copiados! Ajuste a cor/nome e clique em Cadastrar.", "success");
         }
 
         function limparFormulario() {
@@ -2063,6 +2149,7 @@
 
         function popularSelectImpressorasModal() {
             const select = document.getElementById('proj-printer-select');
+            if (!select) return;
             select.innerHTML = '';
 
             if (printers.length === 0) {
@@ -2380,7 +2467,7 @@
         }
 
 
-        // SALVAR E CONCLUIR PROJETO
+        // SALVAR E CONCLUIR PROJETO (DEDUÇÃO E HISTÓRICO)
         function confirmarProjeto(event) {
             event.preventDefault();
 
@@ -2531,7 +2618,7 @@
                         printerName: associatedPrinter.name,
                         printerWatts: associatedPrinter.powerWatts,
                         energyCost: Number(calculatedEnergyCost.toFixed(4)),
-                        energyRate: energyRatePerKwh, // Memoriza a taxa da época
+                        energyRate: energyRatePerKwh, 
                         filamentsUsed,
                         extraCosts,
                         totalFilamentCost: Number(totalFilamentCost.toFixed(2)),
@@ -2555,7 +2642,7 @@
                     printerName: associatedPrinter.name,
                     printerWatts: associatedPrinter.powerWatts,
                     energyCost: Number(calculatedEnergyCost.toFixed(4)),
-                    energyRate: energyRatePerKwh, // Salva o valor KW/h no projeto
+                    energyRate: energyRatePerKwh, 
                     filamentsUsed,
                     extraCosts,
                     totalFilamentCost: Number(totalFilamentCost.toFixed(2)),
@@ -2876,6 +2963,7 @@
                 printers,
                 brands,
                 variations,
+                suppliers, // Adicionado ao backup
                 energyRatePerKwh
             };
             const jsonStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(backup, null, 2))}`;
@@ -2904,6 +2992,7 @@
                         printers = parsed.printers || initialMockPrinters;
                         brands = parsed.brands || ['eSUN', '3D Prime', 'GTMax', 'Slicex', 'Voolt3D', 'Creality', 'Hatchbox'];
                         variations = parsed.variations || ['Normal', 'Silk', 'Plus', 'CF', 'Matte', 'Wood'];
+                        suppliers = parsed.suppliers || ['Prime3D', 'Mercado Livre', 'Amazon', 'GTMax 3D', 'Oficial Creality'];
                         energyRatePerKwh = parsed.energyRatePerKwh || 0.85;
                         
                         localStorage.setItem('filament_db', JSON.stringify(filaments));
@@ -2911,12 +3000,14 @@
                         localStorage.setItem('printers_db', JSON.stringify(printers));
                         localStorage.setItem('brands_db', JSON.stringify(brands));
                         localStorage.setItem('variations_db', JSON.stringify(variations));
+                        localStorage.setItem('suppliers_db', JSON.stringify(suppliers));
                         localStorage.setItem('energy_rate_db', energyRatePerKwh.toString());
 
                         document.getElementById('energy-rate-input').value = energyRatePerKwh;
 
                         popularSelectMarcas();
                         popularSelectVariacoes();
+                        popularDatalistFornecedores();
                         popularFiltrosEstoque();
                         popularFiltrosCompra();
                         atualizarPainel();
