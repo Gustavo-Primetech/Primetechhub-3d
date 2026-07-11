@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PrimetechHub 3D - Gestão Inteligente de Filamentos</title>
-    <!-- Tailwind CSS para um visual moderno e limpo -->
+    <!-- Tailwind CSS para design ágil e responsivo -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome para ícones incríveis -->
+    <!-- FontAwesome para ícones detalhados de tecnologia -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -47,6 +47,21 @@
     <!-- CONTAINER PRINCIPAL DOS TOASTS (NOTIFICAÇÕES CUSTOMIZADAS) -->
     <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
 
+    <!-- MODAL CUSTOMIZADO PARA CONFIRMAÇÃO (SEM ALERT/CONFIRM NATIVO) -->
+    <div id="confirm-modal" class="fixed inset-0 bg-black/80 z-[100] flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl animate-in fade-in duration-200">
+            <h4 class="text-base font-bold text-white flex items-center gap-2 mb-2" id="confirm-title-text">
+                <i class="fa-solid fa-triangle-exclamation text-amber-500"></i> Confirmação
+            </h4>
+            <p class="text-xs text-slate-400 mb-6" id="confirm-body-text">Tem certeza que deseja realizar esta operação?</p>
+            <div class="flex gap-3 justify-end">
+                <button id="confirm-btn-cancel" class="px-4 py-2 text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg transition">Cancelar</button>
+                <button id="confirm-btn-ok" class="px-4 py-2 text-xs font-semibold bg-indigo-600 hover:bg-indigo-550 text-white rounded-lg transition">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN BODY -->
     <div class="min-h-screen flex flex-col">
         <!-- HEADER -->
         <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-40">
@@ -57,7 +72,7 @@
                     </div>
                     <div>
                         <h1 class="text-lg font-bold tracking-tight text-white">PrimetechHub 3D</h1>
-                        <p class="text-xs text-indigo-400 font-medium">Controle Inteligente de Estoque & Qualidade</p>
+                        <p class="text-xs text-indigo-400 font-medium">Controle de Estoque & Projetos Energéticos</p>
                     </div>
                 </div>
                 
@@ -131,8 +146,8 @@
                         <i class="fa-solid fa-cubes-stacked text-3xl"></i>
                     </div>
                     <div>
-                        <h2 class="text-xl font-bold text-white">Criador de Projetos Multicomponentes</h2>
-                        <p class="text-sm text-slate-400 mt-0.5">Registre impressões usando múltiplos filamentos, cronometre o tempo de máquina e calcule o custo real.</p>
+                        <h2 class="text-xl font-bold text-white">Criador de Projetos de Impressão</h2>
+                        <p class="text-sm text-slate-400 mt-0.5">Associe impressoras, compute custos de energia por tempo de execução e gerencie componentes extras de forma integrada.</p>
                     </div>
                 </div>
                 <button onclick="abrirModalProjeto()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-base py-3 px-6 rounded-2xl shadow-lg shadow-indigo-600/30 hover:scale-105 transition duration-200 flex items-center gap-2">
@@ -150,6 +165,9 @@
                 </button>
                 <button onclick="switchTab('tab-prints')" id="btn-tab-prints" class="tab-btn px-5 py-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center gap-2">
                     <i class="fa-solid fa-print"></i> Projetos Realizados & Desempenho
+                </button>
+                <button onclick="switchTab('tab-hardware')" id="btn-tab-hardware" class="tab-btn px-5 py-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-screwdriver-wrench"></i> Impressoras & Parâmetros
                 </button>
             </div>
 
@@ -199,7 +217,7 @@
                                 <div>
                                     <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Variação/Tipo</label>
                                     <select id="variation" required onchange="toggleCustomVariation()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2 text-sm text-white transition outline-none">
-                                        <!-- Carregado via JS para permitir novas variações -->
+                                        <!-- Carregado via JS -->
                                     </select>
                                     <input type="text" id="variation-custom" placeholder="Escreva a nova variação..." class="hidden mt-2 w-full bg-slate-950 border border-indigo-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition outline-none">
                                 </div>
@@ -276,6 +294,15 @@
                                 </div>
                             </div>
 
+                            <!-- Status de Entrega -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Status de Entrega / Disponibilidade</label>
+                                <select id="delivery-status" required class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2 text-sm text-white transition outline-none">
+                                    <option value="entregue">✅ Comprado e Entregue (Disponível no Estoque)</option>
+                                    <option value="aguardando">⏳ Aguardando Entrega (Não disponível para projetos)</option>
+                                </select>
+                            </div>
+
                             <!-- Observações -->
                             <div>
                                 <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Observações (Opcional)</label>
@@ -292,51 +319,77 @@
 
                 <!-- COLUNA DIREITA: FILTROS E LISTA DE CARTÕES / TABELA -->
                 <div class="lg:col-span-2 space-y-6">
-                    <!-- Barra de Busca e Filtros Rápidos -->
-                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
-                        <div class="relative w-full sm:w-64">
-                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-sm"></i>
-                            <input type="text" id="search-input" oninput="filtrarLista()" placeholder="Buscar cor ou marca..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl pl-9 pr-4 py-2 text-sm text-white transition outline-none">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
+                            <!-- Busca por Fabricante -->
+                            <div class="relative col-span-1 md:col-span-1">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-sm"></i>
+                                <input type="text" id="search-input" oninput="filtrarLista()" placeholder="Buscar cor/marca..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl pl-9 pr-4 py-2 text-sm text-white transition outline-none">
+                            </div>
+                            <!-- Filtro Material -->
+                            <div>
+                                <select id="filter-stock-material" onchange="filtrarLista()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none">
+                                    <option value="TODOS">Material: Todos</option>
+                                    <option value="PLA">PLA</option>
+                                    <option value="PETG">PETG</option>
+                                    <option value="ABS">ABS</option>
+                                    <option value="TPU">TPU</option>
+                                    <option value="Nylon">Nylon</option>
+                                    <option value="PVA">PVA</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+                            <!-- Filtro Variação -->
+                            <div>
+                                <select id="filter-stock-variation" onchange="filtrarLista()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none">
+                                    <option value="TODOS">Variação: Todas</option>
+                                </select>
+                            </div>
+                            <!-- Filtro Cor -->
+                            <div>
+                                <select id="filter-stock-color" onchange="filtrarLista()" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white outline-none">
+                                    <option value="TODOS">Cor: Todas</option>
+                                </select>
+                            </div>
                         </div>
                         
-                        <div class="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 items-center">
-                            <button onclick="filtrarMaterialEstoque('TODOS')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg transition shrink-0" data-material="TODOS">Todos</button>
-                            <button onclick="filtrarMaterialEstoque('PLA')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0" data-material="PLA">PLA</button>
-                            <button onclick="filtrarMaterialEstoque('PETG')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0" data-material="PETG">PETG</button>
-                            <button onclick="filtrarMaterialEstoque('ABS')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0" data-material="ABS">ABS</button>
-                            <button onclick="filtrarMaterialEstoque('TPU')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0" data-material="TPU">TPU</button>
+                        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/60">
+                            <!-- Checkbox ocultar esgotados -->
+                            <label class="inline-flex items-center gap-2 text-xs font-semibold text-slate-300 cursor-pointer select-none">
+                                <input type="checkbox" id="hide-depleted-checkbox" onchange="filtrarLista()" class="w-4 h-4 rounded border-slate-800 bg-slate-950 text-indigo-600 focus:ring-indigo-500 accent-indigo-500">
+                                Ocultar filamentos esgotados (0g)
+                            </label>
                             
-                            <!-- SELETOR DE MODO DE VISUALIZAÇÃO -->
-                            <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1 ml-2 shrink-0">
-                                <button type="button" onclick="changeStockView('grid')" id="btn-view-grid" class="p-1 rounded-md text-indigo-400 bg-slate-900 transition" title="Visualização em Grade/Cartões">
-                                    <i class="fa-solid fa-grip"></i>
-                                </button>
-                                <button type="button" onclick="changeStockView('table')" id="btn-view-table" class="p-1 rounded-md text-slate-400 hover:text-white transition" title="Visualização em Tabela">
-                                    <i class="fa-solid fa-table-list"></i>
-                                </button>
+                            <div class="flex items-center gap-2">
+                                <!-- SELETOR DE MODO DE VISUALIZAÇÃO -->
+                                <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1">
+                                    <button type="button" onclick="changeStockView('grid')" id="btn-view-grid" class="p-1.5 rounded-md text-indigo-400 bg-slate-900 transition" title="Visualização em Grade">
+                                        <i class="fa-solid fa-grip text-sm"></i>
+                                    </button>
+                                    <button type="button" onclick="changeStockView('table')" id="btn-view-table" class="p-1.5 rounded-md text-slate-400 hover:text-white transition" title="Visualização em Tabela">
+                                        <i class="fa-solid fa-table-list text-sm"></i>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
 
                     <!-- Lista de Cartões de Filamento (OU TABELA) -->
-                    <div id="filaments-container">
-                        <!-- Conteúdo injetado via JS de acordo com a seleção de grid ou tabela -->
-                    </div>
+                    <div id="filaments-container"></div>
 
                     <!-- Estado vazio -->
                     <div id="empty-state" class="hidden text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
                         <div class="text-slate-500 text-5xl mb-4">
                             <i class="fa-solid fa-folder-open animate-bounce"></i>
                         </div>
-                        <h4 class="text-white font-bold text-lg">Sem filamentos disponíveis</h4>
-                        <p class="text-slate-400 text-sm mt-1">Crie um novo rolo no painel lateral de cadastro para começar.</p>
+                        <h4 class="text-white font-bold text-lg">Sem filamentos correspondentes</h4>
+                        <p class="text-slate-400 text-sm mt-1">Experimente mudar os filtros ou crie um rolo no painel de cadastro.</p>
                     </div>
                 </div>
             </div>
 
             <!-- ABA 2: HISTÓRICO DE COMPRAS -->
             <div id="tab-purchases" class="tab-content hidden space-y-6">
-                <!-- Filtros Avançados de Compra -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
                     <h3 class="text-white font-bold text-base mb-4 flex items-center gap-2">
                         <i class="fa-solid fa-filter text-indigo-500"></i> Filtrar Compras & Gastos
@@ -369,18 +422,17 @@
                             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Variação</label>
                             <select id="filter-purchase-variation" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-sm text-white outline-none">
                                 <option value="TODOS">Todas</option>
-                                <!-- Injetado via JS -->
                             </select>
                         </div>
                         <!-- Filtro Data De -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Data Inicial</label>
-                            <input type="date" id="filter-purchase-date-start" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-white outline-none">
+                            <input type="date" id="filter-purchase-date-start" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-white outline-none font-bold">
                         </div>
                         <!-- Filtro Data Até -->
                         <div>
                             <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Data Final</label>
-                            <input type="date" id="filter-purchase-date-end" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-white outline-none">
+                            <input type="date" id="filter-purchase-date-end" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-white outline-none font-bold">
                         </div>
                     </div>
 
@@ -403,18 +455,17 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                    <th class="pb-3 pl-4">Filamento</th>
-                                    <th class="pb-3">Fabricante</th>
-                                    <th class="pb-3">Fornecedor</th>
-                                    <th class="pb-3">Data de Compra</th>
-                                    <th class="pb-3">Estoque Inicial</th>
-                                    <th class="pb-3 text-right pr-4">Preço Pago</th>
+                                <tr class="border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                                    <th onclick="togglePurchaseSort('colorName')" class="pb-3 pl-4 cursor-pointer hover:text-white transition">Filamento <span id="sort-icon-p-colorName"></span></th>
+                                    <th onclick="togglePurchaseSort('brand')" class="pb-3 cursor-pointer hover:text-white transition">Fabricante <span id="sort-icon-p-brand"></span></th>
+                                    <th onclick="togglePurchaseSort('supplier')" class="pb-3 cursor-pointer hover:text-white transition">Fornecedor <span id="sort-icon-p-supplier"></span></th>
+                                    <th onclick="togglePurchaseSort('date')" class="pb-3 cursor-pointer hover:text-white transition">Data de Compra <span id="sort-icon-p-date"></span></th>
+                                    <th onclick="togglePurchaseSort('totalWeight')" class="pb-3 cursor-pointer hover:text-white transition">Estoque Inicial <span id="sort-icon-p-totalWeight"></span></th>
+                                    <th onclick="togglePurchaseSort('currentWeight')" class="pb-3 cursor-pointer hover:text-white transition">Status / Remanescente <span id="sort-icon-p-currentWeight"></span></th>
+                                    <th onclick="togglePurchaseSort('price')" class="pb-3 text-right pr-4 cursor-pointer hover:text-white transition">Preço Pago <span id="sort-icon-p-price"></span></th>
                                 </tr>
                             </thead>
-                            <tbody id="purchases-tbody" class="divide-y divide-slate-800 text-sm">
-                                <!-- Carregado via JS -->
-                            </tbody>
+                            <tbody id="purchases-tbody" class="divide-y divide-slate-800 text-sm text-slate-300"></tbody>
                         </table>
                     </div>
                     <div id="empty-purchases-state" class="hidden text-center py-12 text-slate-500 text-sm">
@@ -447,8 +498,8 @@
                     </div>
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
                         <div>
-                            <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Problema Mais Recorrente</p>
-                            <h3 class="text-lg font-extrabold text-rose-400 mt-1 truncate max-w-[200px]" id="stat-main-failure-reason">Nenhum</h3>
+                            <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Falha Recorrente</p>
+                            <h3 class="text-lg font-extrabold text-rose-400 mt-1 truncate max-w-[200px]" id="stat-main-failure-reason">Nenhuma</h3>
                         </div>
                         <div class="bg-rose-500/10 p-3 rounded-lg text-rose-400 text-xl">
                             <i class="fa-solid fa-bug"></i>
@@ -463,7 +514,7 @@
                             <h2 class="text-lg font-bold text-white flex items-center gap-2">
                                 <i class="fa-solid fa-chart-line text-indigo-500"></i> Histórico de Consumo & Logs de Projetos
                             </h2>
-                            <p class="text-xs text-slate-400 mt-0.5">Diagnósticos, detalhamento de custos, tempo de execução e materiais associados por projeto</p>
+                            <p class="text-xs text-slate-400 mt-0.5">Diagnósticos, detalhamento de custos (energia/acessórios), tempo de execução e impressora associada por projeto</p>
                         </div>
                         <button onclick="limparHistorico()" class="text-xs text-rose-400 hover:underline flex items-center gap-1.5 font-semibold">
                             <i class="fa-solid fa-trash-can"></i> Limpar Histórico de Consumo
@@ -473,19 +524,17 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                                    <th class="pb-3 pl-4">Projeto / Descrição</th>
-                                    <th class="pb-3">Data & Tempo</th>
+                                <tr class="border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                                    <th onclick="toggleProjectSort('pieceName')" class="pb-3 pl-4 cursor-pointer hover:text-white transition">Projeto / Descrição <span id="sort-icon-proj-pieceName"></span></th>
+                                    <th onclick="toggleProjectSort('date')" class="pb-3 cursor-pointer hover:text-white transition">Data, Tempo & Máquina <span id="sort-icon-proj-date"></span></th>
                                     <th class="pb-3">Materiais Consumidos</th>
-                                    <th class="pb-3">Custos Extras</th>
-                                    <th class="pb-3">Status / Avaliação</th>
-                                    <th class="pb-3">Custo Total</th>
+                                    <th class="pb-3">Custos Extras & Energia</th>
+                                    <th onclick="toggleProjectSort('status')" class="pb-3 cursor-pointer hover:text-white transition">Status / Avaliação <span id="sort-icon-proj-status"></span></th>
+                                    <th onclick="toggleProjectSort('grandTotalCost')" class="pb-3 cursor-pointer hover:text-white transition text-right pr-4">Custo Total <span id="sort-icon-proj-grandTotalCost"></span></th>
                                     <th class="pb-3 text-right pr-4">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody id="history-tbody" class="divide-y divide-slate-800 text-sm">
-                                <!-- Carregado via JS -->
-                            </tbody>
+                            <tbody id="history-tbody" class="divide-y divide-slate-800 text-sm"></tbody>
                         </table>
                     </div>
                     <div id="empty-history-state" class="hidden text-center py-12 text-slate-500 text-sm">
@@ -494,16 +543,102 @@
                 </div>
             </div>
 
+            <!-- ABA 4: HARDWARE E PARÂMETROS -->
+            <div id="tab-hardware" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- COLUNA ESQUERDA: PARÂMETROS GERAIS & CADASTRO DE IMPRESSORA -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Painel de Parâmetros Energéticos -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                        <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                            <i class="fa-solid fa-bolt text-amber-500"></i> Parâmetro Elétrico
+                        </h3>
+                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">Defina o valor cobrado por kW/h na sua região para estimar o consumo de energia real de suas impressoras por projeto.</p>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Tarifa kW/h (R$)</label>
+                                <div class="flex gap-2">
+                                    <input type="number" step="0.0001" id="energy-rate-input" placeholder="Ex: 0.85" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white font-bold outline-none">
+                                    <button onclick="salvarTarifaEnergia()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2 px-4 rounded-lg transition shrink-0 shadow-lg shadow-indigo-600/15">
+                                        Salvar
+                                    </button>
+                                </div>
+                                <span class="text-[10px] text-indigo-400 mt-1 block font-medium">* Atualizações não afetam projetos já concluídos anteriormente.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Formulário de Cadastro de Impressoras -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                        <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2" id="printer-form-title">
+                            <i class="fa-solid fa-plus-circle text-indigo-500"></i> Cadastrar Impressora
+                        </h3>
+                        <p class="text-xs text-slate-400 mb-4 leading-relaxed">Adicione suas máquinas informando a potência média de operação (Watts) para controle financeiro preciso.</p>
+                        
+                        <form id="printer-form" onsubmit="salvarImpressora(event)" class="space-y-4">
+                            <input type="hidden" id="printer-edit-id" value="">
+                            
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Nome / Modelo da Máquina</label>
+                                <input type="text" id="printer-name" required placeholder="Ex: Bambu Lab P1S" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Consumo Médio (Watts)</label>
+                                <input type="number" id="printer-power" required min="10" placeholder="Ex: 350" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white font-bold outline-none">
+                                <span class="text-[10px] text-slate-500 mt-1 block">A potência de bico e mesa aquecidos costuma oscilar entre 120W e 350W em atividade.</span>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Observações (Opcional)</label>
+                                <textarea id="printer-notes" rows="2" placeholder="Ex: Bico de aço endurecido 0.4 instalado..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none resize-none"></textarea>
+                            </div>
+
+                            <div class="flex gap-2">
+                                <button type="button" id="cancel-printer-edit-btn" onclick="limparFormularioImpressora()" class="hidden flex-1 py-2 px-3 text-xs font-semibold bg-slate-800 hover:bg-slate-750 text-slate-300 rounded-lg transition">Cancelar</button>
+                                <button type="submit" id="printer-submit-btn-text" class="flex-grow bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 px-4 rounded-lg transition shadow-lg shadow-indigo-600/15">Cadastrar Impressora</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- COLUNA DIREITA: GRID OU TABELA DE IMPRESSORAS CADASTRADAS -->
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                        <div class="flex flex-wrap items-center justify-between gap-3 mb-4 pb-4 border-b border-slate-800/60">
+                            <div>
+                                <h2 class="text-base font-bold text-white flex items-center gap-2">
+                                    <i class="fa-solid fa-server text-indigo-500"></i> Parque de Máquinas Ativo
+                                </h2>
+                                <p class="text-xs text-slate-400 mt-0.5">Lista de impressoras configuradas para faturamento de tempo de processamento.</p>
+                            </div>
+                            
+                            <!-- SELETOR DE MODO DE VISUALIZAÇÃO DE IMPRESSORAS -->
+                            <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1">
+                                <button type="button" onclick="changePrinterView('grid')" id="btn-pview-grid" class="p-1.5 rounded-md text-indigo-400 bg-slate-900 transition" title="Visualização em Grade">
+                                    <i class="fa-solid fa-grip text-sm"></i>
+                                </button>
+                                <button type="button" onclick="changePrinterView('table')" id="btn-pview-table" class="p-1.5 rounded-md text-slate-400 hover:text-white transition" title="Visualização em Tabela">
+                                    <i class="fa-solid fa-table-list text-sm"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="printers-container"></div>
+                    </div>
+                </div>
+            </div>
+
         </main>
 
         <!-- FOOTER -->
         <footer class="border-t border-slate-900 bg-slate-950 py-8 text-center mt-12">
-            <p class="text-xs text-slate-500">PrimetechHub 3D - Gestão Inteligente para Fabricantes e Makers. Todos os dados são processados e armazenados localmente.</p>
+            <p class="text-xs text-slate-500">PrimetechHub 3D - Gestão Inteligente de Manufatura Maker. Todos os dados são processados e guardados localmente com total privacidade.</p>
         </footer>
     </div>
 
 
-    <!-- MODAL DE NOVO PROJETO (MULTICOMPONENTES & DINÂMICO) -->
+    <!-- MODAL DE NOVO PROJETO (MULTICOMPONENTES, IMPRESSORAS E CUSTOS ELÉTRICOS) -->
     <div id="project-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden overflow-y-auto">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 relative shadow-2xl my-8">
             <button onclick="fecharModalProjeto()" class="absolute right-4 top-4 text-slate-400 hover:text-white transition">
@@ -513,9 +648,9 @@
             <h3 class="text-lg font-bold text-white mb-1 flex items-center gap-2" id="project-modal-title">
                 <i class="fa-solid fa-square-plus text-indigo-500"></i> Registrar Novo Projeto 3D
             </h3>
-            <p class="text-xs text-slate-400 mb-4 pb-2 border-b border-slate-800">Combine filamentos, adicione acessórios, o tempo gasto e registre notas sobre a qualidade final.</p>
+            <p class="text-xs text-slate-400 mb-4 pb-2 border-b border-slate-800">Associe impressoras, compute tempos de operação, gastos de filamento e custos extras.</p>
             
-            <form onsubmit="confirmarProjeto(event)" class="space-y-5">
+            <form onsubmit="confirmarProjeto(event)" class="space-y-4">
                 <!-- ID invisível para edição de projeto -->
                 <input type="hidden" id="proj-edit-id" value="">
                 
@@ -526,20 +661,26 @@
                         <input type="text" id="proj-name" required placeholder="Ex: Estação de Carga, Suporte Articulado" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Descrição / Notas do Processo</label>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Descrição / Notas do Fatiamento</label>
                         <input type="text" id="proj-notes" placeholder="Ex: Velocidade 60mm/s, fatiado no Cura" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
                     </div>
                 </div>
 
-                <!-- TEMPO DE EXECUÇÃO -->
-                <div class="grid grid-cols-2 gap-4">
+                <!-- ASSOCIAÇÃO DE IMPRESSORA E TEMPO -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950/40 p-4 rounded-xl border border-slate-800/50">
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Horas de Impressão (Tempo)</label>
-                        <input type="number" id="proj-time-hours" min="0" placeholder="Ex: 8" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Impressora Utilizada</label>
+                        <select id="proj-printer-select" required onchange="recalcularTotaisProjeto()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-1.5 text-sm text-white outline-none">
+                            <!-- Populado via JS -->
+                        </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Minutos de Impressão</label>
-                        <input type="number" id="proj-time-minutes" min="0" max="59" placeholder="Ex: 45" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Tempo de Trabalho (Horas)</label>
+                        <input type="number" id="proj-time-hours" min="0" placeholder="Ex: 8" oninput="recalcularTotaisProjeto()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-1.5 text-sm text-white font-bold outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Minutos de Trabalho</label>
+                        <input type="number" id="proj-time-minutes" min="0" max="59" placeholder="Ex: 45" oninput="recalcularTotaisProjeto()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-1.5 text-sm text-white font-bold outline-none">
                     </div>
                 </div>
 
@@ -594,7 +735,7 @@
                     <div>
                         <!-- Campo Dinâmico de Sucesso -->
                         <div id="proj-status-success" class="space-y-1.5">
-                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Qualidade Visual</label>
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Qualidade Final</label>
                             <div class="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 justify-center">
                                 <button type="button" onclick="setProjRating(1)" class="proj-star-btn text-xl text-amber-500 hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
                                 <button type="button" onclick="setProjRating(2)" class="proj-star-btn text-xl text-amber-500 hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
@@ -628,10 +769,11 @@
                     <div class="space-y-1">
                         <div>Filamentos: <span class="text-white font-extrabold" id="sum-filaments-cost">R$ 0,00</span></div>
                         <div>Acessórios Extras: <span class="text-white font-extrabold" id="sum-extras-cost">R$ 0,00</span></div>
+                        <div>Eletricidade Projetada: <span class="text-white font-extrabold" id="sum-energy-cost">R$ 0,00</span></div>
                     </div>
                     <div class="text-right">
-                        <span class="block text-slate-400 text-[10px] uppercase tracking-wider">Custo Total de Produção</span>
-                        <span class="text-xl font-black text-emerald-400" id="sum-grand-total">R$ 0,00</span>
+                        <span class="block text-slate-400 text-[10px] uppercase tracking-wider">Custo de Fabricação Estimado</span>
+                        <span class="text-xl font-black text-emerald-400 font-bold animate-pulse" id="sum-grand-total">R$ 0,00</span>
                     </div>
                 </div>
 
@@ -653,10 +795,18 @@
     <script>
         // Dados de inicialização padrão (Mock) caso o usuário não tenha nada cadastrado ainda
         const initialMockData = [
-            { id: 1, brand: "eSUN", material: "PLA", variation: "Silk", colorName: "Ouro Radiante", colorHex: "#d97706", price: 139.90, totalWeight: 1000, currentWeight: 850, supplier: "Prime3D", date: "2026-05-12", notes: "Excelente brilho e acabamento" },
-            { id: 2, brand: "3D Prime", material: "PETG", variation: "Normal", colorName: "Preto Opaco", colorHex: "#1e293b", price: 125.00, totalWeight: 1000, currentWeight: 140, supplier: "Mercado Livre", date: "2026-04-18", notes: "Aderência excelente na mesa com cola bastão" },
-            { id: 3, brand: "GTMax", material: "ABS", variation: "Plus", colorName: "Vermelho Mecânico", colorHex: "#dc2626", price: 119.00, totalWeight: 1000, currentWeight: 600, supplier: "GTMax 3D", date: "2026-06-02", notes: "Necessário enclausurar impressora para evitar warp" },
-            { id: 4, brand: "Slicex", material: "TPU", variation: "Normal", colorName: "Azul Cristal", colorHex: "#06b6d4", price: 159.90, totalWeight: 500, currentWeight: 450, supplier: "Amazon", date: "2026-06-15", notes: "Sem retração para evitar encavalamento" }
+            { id: 1, brand: "eSUN", material: "PLA", variation: "Silk", colorName: "Ouro Radiante", colorHex: "#d97706", price: 139.90, totalWeight: 1000, currentWeight: 850, supplier: "Prime3D", date: "2026-05-12", notes: "Excelente brilho e acabamento", deliveryStatus: "entregue" },
+            { id: 2, brand: "3D Prime", material: "PETG", variation: "Normal", colorName: "Preto Opaco", colorHex: "#1e293b", price: 125.00, totalWeight: 1000, currentWeight: 140, supplier: "Mercado Livre", date: "2026-04-18", notes: "Aderência excelente na mesa com cola bastão", deliveryStatus: "entregue" },
+            { id: 3, brand: "GTMax", material: "ABS", variation: "Plus", colorName: "Vermelho Mecânico", colorHex: "#dc2626", price: 119.00, totalWeight: 1000, currentWeight: 600, supplier: "GTMax 3D", date: "2026-06-02", notes: "Necessário enclausurar impressora para evitar warp", deliveryStatus: "entregue" },
+            { id: 4, brand: "Slicex", material: "TPU", variation: "Normal", colorName: "Azul Cristal", colorHex: "#06b6d4", price: 159.90, totalWeight: 500, currentWeight: 450, supplier: "Amazon", date: "2026-06-15", notes: "Sem retração para evitar encavalamento", deliveryStatus: "entregue" },
+            { id: 5, brand: "Creality", material: "PLA", variation: "Normal", colorName: "Branco Hyper", colorHex: "#f8fafc", price: 110.00, totalWeight: 1000, currentWeight: 1000, supplier: "Oficial Creality", date: "2026-07-10", notes: "Aguardando chegada para testar velocidade máxima", deliveryStatus: "aguardando" }
+        ];
+
+        const initialMockPrinters = [
+            { id: 1, name: "Creality Ender 3 v3 KE", powerWatts: 350, notes: "Operação veloz via Klipper" },
+            { id: 2, name: "Bambu Lab P1S", powerWatts: 350, notes: "Nivelamento inteligente por Lidar" },
+            { id: 3, name: "Prusa i3 MK4", powerWatts: 300, notes: "Excelente confiabilidade mecânica" },
+            { id: 4, name: "SLA UV Genérica (Resina)", powerWatts: 100, notes: "Consumo reduzido de energia" }
         ];
 
         const initialMockHistory = [
@@ -670,33 +820,18 @@
                 failureReason: "", 
                 durationHours: 4,
                 durationMinutes: 15,
+                printerId: 1,
+                printerName: "Creality Ender 3 v3 KE",
+                printerWatts: 350,
+                energyCost: 1.26, // Pré-calculado estático
+                energyRate: 0.85,
                 filamentsUsed: [
                     { filamentId: 1, brand: "eSUN", material: "PLA", variation: "Silk", colorName: "Ouro Radiante", colorHex: "#d97706", weightUsed: 120, cost: 16.78 }
                 ],
                 extraCosts: [],
                 totalFilamentCost: 16.78,
                 totalExtraCost: 0.00,
-                grandTotalCost: 16.78
-            },
-            { 
-                id: 102, 
-                pieceName: "Suporte Articulado Gopro", 
-                notes: "Mesa estava fria e sem adesivo.", 
-                date: "2026-06-03T14:20:00.000Z", 
-                status: "falha", 
-                rating: 0, 
-                failureReason: "Descolamento da Mesa (Warping)", 
-                durationHours: 2,
-                durationMinutes: 0,
-                filamentsUsed: [
-                    { filamentId: 2, brand: "3D Prime", material: "PETG", variation: "Normal", colorName: "Preto Opaco", colorHex: "#1e293b", weightUsed: 65, cost: 8.12 }
-                ],
-                extraCosts: [
-                    { name: "Imã Neodímio", cost: 4.50 }
-                ],
-                totalFilamentCost: 8.12,
-                totalExtraCost: 4.50,
-                grandTotalCost: 12.62
+                grandTotalCost: 18.04
             }
         ];
 
@@ -750,19 +885,47 @@
 
         let filaments = [];
         let printHistory = [];
+        let printers = [];
         let brands = [];
         let variations = [];
+        let energyRatePerKwh = 0.85; // Custo médio de energia default no Brasil
         
-        let currentStockFilterMaterial = 'TODOS';
         let stockViewMode = 'grid'; // 'grid' ou 'table'
+        let printerViewMode = 'grid'; // 'grid' ou 'table'
+
+        // VARIÁVEIS DE ESTADO DE ORDENAÇÃO
+        let stockSortColumn = 'colorName';
+        let stockSortDir = 'asc';
+
+        let purchaseSortColumn = 'date';
+        let purchaseSortDir = 'desc';
+
+        let projectSortColumn = 'date';
+        let projectSortDir = 'desc';
+
+        let printerSortColumn = 'name';
+        let printerSortDir = 'asc';
 
         // Inicialização na abertura da página
         window.addEventListener('load', () => {
-            // Inicializando Média de Visualização
+            // Inicializando Visão
             if (localStorage.getItem('stock_view_mode')) {
                 stockViewMode = localStorage.getItem('stock_view_mode');
             }
             changeStockViewBtnClass();
+
+            if (localStorage.getItem('printer_view_mode')) {
+                printerViewMode = localStorage.getItem('printer_view_mode');
+            }
+            changePrinterViewBtnClass();
+
+            // Inicializando Tarifa
+            if (localStorage.getItem('energy_rate_db')) {
+                energyRatePerKwh = parseFloat(localStorage.getItem('energy_rate_db'));
+            } else {
+                localStorage.setItem('energy_rate_db', energyRatePerKwh.toString());
+            }
+            document.getElementById('energy-rate-input').value = energyRatePerKwh;
 
             // Inicializando Banco de Fabricantes
             if (localStorage.getItem('brands_db')) {
@@ -788,6 +951,14 @@
                 localStorage.setItem('filament_db', JSON.stringify(filaments));
             }
 
+            // Inicializando Impressoras
+            if (localStorage.getItem('printers_db')) {
+                printers = JSON.parse(localStorage.getItem('printers_db'));
+            } else {
+                printers = initialMockPrinters;
+                localStorage.setItem('printers_db', JSON.stringify(printers));
+            }
+
             // Inicializando Histórico de Impressão
             if (localStorage.getItem('print_history_db')) {
                 printHistory = JSON.parse(localStorage.getItem('print_history_db'));
@@ -799,9 +970,106 @@
             popularSelectMarcas();
             popularSelectVariacoes();
             mostrarDicasMaterial();
+            popularFiltrosEstoque();
             atualizarPainel();
             popularFiltrosCompra();
+            renderizarImpressoras();
         });
+
+
+        // SISTEMA DE CONFIRMAÇÕES CUSTOMIZADAS (LIVRE DE ALERT/CONFIRM NATIVO)
+        function showCustomConfirm(title, message, callbackOnOk) {
+            const modal = document.getElementById('confirm-modal');
+            const titleEl = document.getElementById('confirm-title-text');
+            const bodyEl = document.getElementById('confirm-body-text');
+            const btnOk = document.getElementById('confirm-btn-ok');
+            const btnCancel = document.getElementById('confirm-btn-cancel');
+
+            titleEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation text-amber-500"></i> ${title}`;
+            bodyEl.textContent = message;
+
+            modal.classList.remove('hidden');
+
+            const clearEvents = () => {
+                btnOk.onclick = null;
+                btnCancel.onclick = null;
+                modal.classList.add('hidden');
+            };
+
+            btnOk.onclick = () => {
+                clearEvents();
+                callbackOnOk();
+            };
+
+            btnCancel.onclick = () => {
+                clearEvents();
+            };
+        }
+
+
+        // FUNÇÕES AUXILIARES DE ORDENAÇÃO
+        function getSortIcon(currentCol, col, dir) {
+            if (currentCol !== col) return '<i class="fa-solid fa-sort text-slate-600 ml-1"></i>';
+            return dir === 'asc' 
+                ? '<i class="fa-solid fa-sort-up text-indigo-400 ml-1"></i>' 
+                : '<i class="fa-solid fa-sort-down text-indigo-400 ml-1"></i>';
+        }
+
+        function updateHeaderIcons(prefix, activeCol, activeDir, columns) {
+            columns.forEach(col => {
+                const el = document.getElementById(`sort-icon-${prefix}-${col}`);
+                if (el) {
+                    if (col === activeCol) {
+                        el.innerHTML = activeDir === 'asc' 
+                            ? '<i class="fa-solid fa-sort-up text-indigo-400 ml-1"></i>' 
+                            : '<i class="fa-solid fa-sort-down text-indigo-400 ml-1"></i>';
+                    } else {
+                        el.innerHTML = '<i class="fa-solid fa-sort text-slate-600 ml-1"></i>';
+                    }
+                }
+            });
+        }
+
+        function toggleStockSort(col) {
+            if (stockSortColumn === col) {
+                stockSortDir = stockSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                stockSortColumn = col;
+                stockSortDir = 'asc';
+            }
+            renderizarListaFilamentos();
+        }
+
+        function togglePurchaseSort(col) {
+            if (purchaseSortColumn === col) {
+                purchaseSortDir = purchaseSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                purchaseSortColumn = col;
+                purchaseSortDir = 'asc';
+            }
+            renderizarHistoricoCompras();
+        }
+
+        function toggleProjectSort(col) {
+            if (projectSortColumn === col) {
+                projectSortDir = projectSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                projectSortColumn = col;
+                projectSortDir = 'asc';
+            }
+            renderizarHistoricoPrints();
+        }
+
+        function togglePrinterSort(col) {
+            if (printerSortColumn === col) {
+                printerSortDir = printerSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                printerSortColumn = col;
+                printerSortDir = 'asc';
+            }
+            renderizarImpressoras();
+        }
+
 
         // Apresentar Notificações Modernas (Toasts)
         function showToast(message, type = 'success') {
@@ -833,6 +1101,7 @@
             }, 3500);
         }
 
+
         // CONTROLAR SISTEMA DE ABAS
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(content => {
@@ -855,8 +1124,11 @@
             } else if (tabId === 'tab-prints') {
                 renderizarHistoricoPrints();
                 atualizarMetricasConfiabilidade();
+            } else if (tabId === 'tab-hardware') {
+                renderizarImpressoras();
             }
         }
+
 
         // POPULAR SELEÇÃO DE MARCAS NO CADASTRO
         function popularSelectMarcas() {
@@ -890,6 +1162,7 @@
                 customInput.required = false;
             }
         }
+
 
         // POPULAR SELEÇÃO DE VARIAÇÕES NO CADASTRO
         function popularSelectVariacoes() {
@@ -925,6 +1198,7 @@
             mostrarDicasMaterial();
         }
 
+
         // POPULAR FILTROS DA ABA DE HISTÓRICO DE COMPRAS
         function popularFiltrosCompra() {
             const filterBrand = document.getElementById('filter-purchase-brand');
@@ -949,6 +1223,40 @@
             });
             filterVar.value = currentVarSelected;
         }
+
+        function popularFiltrosEstoque() {
+            const variationSelect = document.getElementById('filter-stock-variation');
+            const colorSelect = document.getElementById('filter-stock-color');
+            
+            const currentVar = variationSelect ? variationSelect.value : 'TODOS';
+            const currentCol = colorSelect ? colorSelect.value : 'TODOS';
+
+            const uniqueVariations = [...new Set(filaments.map(f => f.variation))].sort();
+            const uniqueColors = [...new Set(filaments.map(f => f.colorName))].sort();
+
+            if (variationSelect) {
+                variationSelect.innerHTML = '<option value="TODOS">Variação: Todas</option>';
+                uniqueVariations.forEach(v => {
+                    const opt = document.createElement('option');
+                    opt.value = v;
+                    opt.textContent = v;
+                    variationSelect.appendChild(opt);
+                });
+                variationSelect.value = currentVar;
+            }
+
+            if (colorSelect) {
+                colorSelect.innerHTML = '<option value="TODOS">Cor: Todas</option>';
+                uniqueColors.forEach(c => {
+                    const opt = document.createElement('option');
+                    opt.value = c;
+                    opt.textContent = c;
+                    colorSelect.appendChild(opt);
+                });
+                colorSelect.value = currentCol;
+            }
+        }
+
 
         // MOSTRAR DICAS DE FICHA TÉCNICA
         function mostrarDicasMaterial() {
@@ -977,6 +1285,7 @@
             }
         }
 
+
         // ALTERAR MODO DE VISUALIZAÇÃO DO ESTOQUE
         function changeStockView(view) {
             stockViewMode = view;
@@ -990,13 +1299,37 @@
             const btnTable = document.getElementById('btn-view-table');
             
             if (stockViewMode === 'grid') {
-                btnGrid.className = "p-1 rounded-md text-indigo-400 bg-slate-900 transition";
-                btnTable.className = "p-1 rounded-md text-slate-400 hover:text-white transition";
+                btnGrid.className = "p-1.5 rounded-md text-indigo-400 bg-slate-900 transition";
+                btnTable.className = "p-1.5 rounded-md text-slate-400 hover:text-white transition";
             } else {
-                btnGrid.className = "p-1 rounded-md text-slate-400 hover:text-white transition";
-                btnTable.className = "p-1 rounded-md text-indigo-400 bg-slate-900 transition";
+                btnGrid.className = "p-1.5 rounded-md text-slate-400 hover:text-white transition";
+                btnTable.className = "p-1.5 rounded-md text-indigo-400 bg-slate-900 transition";
             }
         }
+
+
+        // ALTERAR MODO DE VISUALIZAÇÃO DE IMPRESSORAS
+        function changePrinterView(view) {
+            printerViewMode = view;
+            localStorage.setItem('printer_view_mode', view);
+            changePrinterViewBtnClass();
+            renderizarImpressoras();
+        }
+
+        function changePrinterViewBtnClass() {
+            const btnGrid = document.getElementById('btn-pview-grid');
+            const btnTable = document.getElementById('btn-pview-table');
+            if (!btnGrid || !btnTable) return;
+            
+            if (printerViewMode === 'grid') {
+                btnGrid.className = "p-1.5 rounded-md text-indigo-400 bg-slate-900 transition";
+                btnTable.className = "p-1.5 rounded-md text-slate-400 hover:text-white transition";
+            } else {
+                btnGrid.className = "p-1.5 rounded-md text-slate-400 hover:text-white transition";
+                btnTable.className = "p-1.5 rounded-md text-indigo-400 bg-slate-900 transition";
+            }
+        }
+
 
         // ATUALIZAR MÉTRICAS GERAIS E PAINEL
         function atualizarPainel() {
@@ -1018,18 +1351,28 @@
             renderizarListaFilamentos();
         }
 
+
         // RENDERIZAR LISTA DE ESTOQUE ATIVO (GRADE DE CARDS OU TABELA RESPONSIVA)
         function renderizarListaFilamentos() {
             const container = document.getElementById('filaments-container');
             const emptyState = document.getElementById('empty-state');
             const searchQuery = document.getElementById('search-input').value.toLowerCase();
             
+            const filterMaterial = document.getElementById('filter-stock-material').value;
+            const filterVariation = document.getElementById('filter-stock-variation').value;
+            const filterColor = document.getElementById('filter-stock-color').value;
+            const hideDepleted = document.getElementById('hide-depleted-checkbox').checked;
+
             container.innerHTML = '';
 
             const filtered = filaments.filter(f => {
                 const matchesSearch = f.brand.toLowerCase().includes(searchQuery) || f.colorName.toLowerCase().includes(searchQuery);
-                const matchesMaterial = currentStockFilterMaterial === 'TODOS' || f.material === currentStockFilterMaterial;
-                return matchesSearch && matchesMaterial;
+                const matchesMaterial = filterMaterial === 'TODOS' || f.material === filterMaterial;
+                const matchesVariation = filterVariation === 'TODOS' || f.variation === filterVariation;
+                const matchesColor = filterColor === 'TODOS' || f.colorName === filterColor;
+                const matchesDepleted = !hideDepleted || f.currentWeight > 0;
+                
+                return matchesSearch && matchesMaterial && matchesVariation && matchesColor && matchesDepleted;
             });
 
             if (filtered.length === 0) {
@@ -1039,7 +1382,41 @@
                 emptyState.classList.add('hidden');
             }
 
-            // MODO DE VISUALIZAÇÃO: GRADE (CARTÕES)
+            // Ordenamento inteligente
+            filtered.sort((a, b) => {
+                let valA, valB;
+                if (stockSortColumn === 'colorName') {
+                    valA = a.colorName.toLowerCase();
+                    valB = b.colorName.toLowerCase();
+                } else if (stockSortColumn === 'brand') {
+                    valA = a.brand.toLowerCase();
+                    valB = b.brand.toLowerCase();
+                } else if (stockSortColumn === 'material') {
+                    valA = `${a.material} ${a.variation}`.toLowerCase();
+                    valB = `${b.material} ${b.variation}`.toLowerCase();
+                } else if (stockSortColumn === 'currentWeight') {
+                    valA = Number(a.currentWeight);
+                    valB = Number(b.currentWeight);
+                } else if (stockSortColumn === 'priceRemaining') {
+                    valA = (Number(a.price) * Number(a.currentWeight)) / Number(a.totalWeight);
+                    valB = (Number(b.price) * Number(b.currentWeight)) / Number(b.totalWeight);
+                } else if (stockSortColumn === 'deliveryStatus') {
+                    valA = a.deliveryStatus.toLowerCase();
+                    valB = b.deliveryStatus.toLowerCase();
+                } else if (stockSortColumn === 'supplier') {
+                    valA = (a.supplier || '').toLowerCase();
+                    valB = (b.supplier || '').toLowerCase();
+                } else {
+                    valA = a.id;
+                    valB = b.id;
+                }
+
+                if (valA < valB) return stockSortDir === 'asc' ? -1 : 1;
+                if (valA > valB) return stockSortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            // Visão em Grade (Cartões)
             if (stockViewMode === 'grid') {
                 const gridDiv = document.createElement('div');
                 gridDiv.className = "grid grid-cols-1 md:grid-cols-2 gap-4";
@@ -1049,12 +1426,20 @@
                     const percentage = Math.round((f.currentWeight / f.totalWeight) * 100);
                     let progressColor = 'bg-indigo-600';
                     let alertBadge = '';
-                    
-                    if (f.currentWeight <= 0) {
+                    let cardBorderClass = 'border-slate-800';
+                    let cardOpacityClass = '';
+
+                    if (f.deliveryStatus === 'aguardando') {
+                        progressColor = 'bg-amber-600/40';
+                        cardBorderClass = 'border-amber-500/40 border-dashed bg-slate-900/40';
+                        cardOpacityClass = 'opacity-80';
+                        alertBadge = `<span class="bg-amber-950/60 text-amber-400 border border-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1 animate-pulse"><i class="fa-solid fa-truck-ramp-box"></i> Aguardando</span>`;
+                    } else if (f.currentWeight <= 0) {
                         progressColor = 'bg-slate-800 border-slate-700';
                         alertBadge = `<span class="bg-slate-950 text-slate-400 border border-slate-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Esgotado</span>`;
                     } else if (f.currentWeight < 150) {
                         progressColor = 'bg-rose-500 shadow-lg shadow-rose-500/20';
+                        cardBorderClass = 'border-rose-900/40 bg-rose-950/5';
                         alertBadge = `<span class="bg-rose-950/50 text-rose-400 border border-rose-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation animate-bounce"></i> Crítico</span>`;
                     } else if (f.currentWeight < 350) {
                         progressColor = 'bg-amber-500';
@@ -1068,9 +1453,8 @@
                     const extraTip = variationSpecs[f.variation] || '';
 
                     const cardHtml = `
-                        <div class="bg-slate-900 border ${f.currentWeight < 150 && f.currentWeight > 0 ? 'border-rose-900/40 bg-rose-950/5' : 'border-slate-800'} rounded-2xl p-5 hover:border-slate-700 transition duration-300 relative overflow-hidden flex flex-col justify-between">
+                        <div class="bg-slate-900 border ${cardBorderClass} ${cardOpacityClass} rounded-2xl p-5 hover:border-slate-700 transition duration-300 relative overflow-hidden flex flex-col justify-between">
                             <div>
-                                <!-- Header do Card -->
                                 <div class="flex justify-between items-start mb-3">
                                     <div class="flex items-center gap-2.5">
                                         <span class="w-5 h-5 rounded-full border border-slate-700 shadow-inner block" style="background-color: ${f.colorHex}"></span>
@@ -1085,7 +1469,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Gráfico de Progresso de Peso -->
                                 <div class="mt-4">
                                     <div class="flex justify-between text-xs font-semibold mb-1">
                                         <span class="text-slate-300">${f.currentWeight}g <span class="text-slate-500 text-[10px]">restantes de ${f.totalWeight}g</span></span>
@@ -1096,7 +1479,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Meta Informações extras -->
                                 <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-800/50 text-[11px] text-slate-400">
                                     <div>
                                         <span class="block text-slate-500 uppercase tracking-wide text-[9px] font-bold">Valor em Sobra</span>
@@ -1108,13 +1490,12 @@
                                     </div>
                                 </div>
 
-                                <!-- Sanfona técnica do material -->
                                 <details class="mt-3 bg-slate-950/40 rounded-xl border border-slate-800/40 overflow-hidden group">
                                     <summary class="flex justify-between items-center px-3 py-2 text-xs font-semibold text-indigo-400 cursor-pointer hover:bg-slate-900/50 transition list-none select-none">
                                         <span class="flex items-center gap-1.5"><i class="fa-solid fa-graduation-cap"></i> Parâmetros Técnicos</span>
                                         <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 group-open:rotate-180 transition-transform"></i>
                                     </summary>
-                                    <div class="p-3 text-[11px] text-slate-300 space-y-2 border-t border-slate-850 bg-slate-950/80">
+                                    <div class="p-3 text-[11px] text-slate-300 space-y-2 border-t border-slate-850 bg-slate-950/80 font-medium">
                                         <div>
                                             <strong class="text-slate-400 block mb-0.5">💧 Secagem / Umidade:</strong>
                                             <span class="text-slate-300">${currentSpecs.humidity}</span>
@@ -1143,7 +1524,6 @@
                                 ` : ''}
                             </div>
 
-                            <!-- Botões de Ação do Card -->
                             <div class="flex items-center gap-2 mt-5 pt-3 border-t border-slate-800/50">
                                 <button onclick="prepararEdicao(${f.id})" class="flex-grow bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs font-bold py-1.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5" title="Editar informações">
                                     <i class="fa-solid fa-pen-to-square"></i> Editar Rolo
@@ -1156,9 +1536,8 @@
                     `;
                     gridDiv.insertAdjacentHTML('beforeend', cardHtml);
                 });
-            } 
-            // MODO DE VISUALIZAÇÃO: TABELA RESPONSIVA
-            else {
+            } else {
+                // Visão em Tabela
                 const tableWrap = document.createElement('div');
                 tableWrap.className = "bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl";
                 
@@ -1169,13 +1548,24 @@
                     
                     let progressBg = 'bg-emerald-500';
                     let rowAlertStyle = '';
-                    if (f.currentWeight <= 0) {
+                    let statusLabel = '';
+
+                    if (f.deliveryStatus === 'aguardando') {
+                        progressBg = 'bg-amber-600/40 animate-pulse';
+                        rowAlertStyle = 'bg-amber-950/5';
+                        statusLabel = '⏳ Aguardando';
+                    } else if (f.currentWeight <= 0) {
                         progressBg = 'bg-slate-800';
+                        statusLabel = 'Esgotado';
                     } else if (f.currentWeight < 150) {
                         progressBg = 'bg-rose-500';
                         rowAlertStyle = 'bg-rose-950/5';
+                        statusLabel = '🚨 Crítico';
                     } else if (f.currentWeight < 350) {
                         progressBg = 'bg-amber-500';
+                        statusLabel = '⚠️ Baixo';
+                    } else {
+                        statusLabel = '✅ Disponível';
                     }
 
                     tbodyHtml += `
@@ -1200,10 +1590,13 @@
                                     </div>
                                 </div>
                             </td>
-                            <td class="py-3 text-xs font-semibold text-emerald-400">
+                            <td class="py-3 text-xs text-slate-400 font-bold">
+                                ${statusLabel}
+                            </td>
+                            <td class="py-3 text-xs font-bold text-emerald-400">
                                 R$ ${valorRestante.replace('.', ',')}
                             </td>
-                            <td class="py-3 text-xs text-slate-400 hidden sm:table-cell">
+                            <td class="py-3 text-xs text-slate-400 hidden sm:table-cell font-semibold">
                                 ${f.supplier || 'Não informado'}
                             </td>
                             <td class="py-3 pr-4 text-right">
@@ -1224,16 +1617,17 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                                    <th class="py-3 pl-4">Filamento</th>
-                                    <th class="py-3">Tipo</th>
-                                    <th class="py-3">Disponibilidade (g)</th>
-                                    <th class="py-3">Sobra R$</th>
-                                    <th class="py-3 hidden sm:table-cell">Fornecedor</th>
+                                <tr class="border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                                    <th onclick="toggleStockSort('colorName')" class="py-3 pl-4 cursor-pointer hover:text-white transition">Filamento ${getSortIcon(stockSortColumn, 'colorName', stockSortDir)}</th>
+                                    <th onclick="toggleStockSort('material')" class="py-3 cursor-pointer hover:text-white transition">Tipo ${getSortIcon(stockSortColumn, 'material', stockSortDir)}</th>
+                                    <th onclick="toggleStockSort('currentWeight')" class="py-3 cursor-pointer hover:text-white transition">Disponibilidade ${getSortIcon(stockSortColumn, 'currentWeight', stockSortDir)}</th>
+                                    <th onclick="toggleStockSort('deliveryStatus')" class="py-3 cursor-pointer hover:text-white transition">Status ${getSortIcon(stockSortColumn, 'deliveryStatus', stockSortDir)}</th>
+                                    <th onclick="toggleStockSort('priceRemaining')" class="py-3 cursor-pointer hover:text-white transition">Sobra R$ ${getSortIcon(stockSortColumn, 'priceRemaining', stockSortDir)}</th>
+                                    <th onclick="toggleStockSort('supplier')" class="py-3 cursor-pointer hover:text-white transition hidden sm:table-cell">Fornecedor ${getSortIcon(stockSortColumn, 'supplier', stockSortDir)}</th>
                                     <th class="py-3 pr-4 text-right">Ações</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-slate-800/40 text-slate-300">
+                            <tbody class="divide-y divide-slate-800/40 text-slate-300 font-medium">
                                 ${tbodyHtml}
                             </tbody>
                         </table>
@@ -1242,6 +1636,7 @@
                 container.appendChild(tableWrap);
             }
         }
+
 
         // SALVAR OU EDITAR FILAMENTO
         function salvarFilamento(event) {
@@ -1261,9 +1656,9 @@
             const currentWeight = Number(document.getElementById('current-weight').value);
             const price = Number(document.getElementById('price').value);
             const supplier = document.getElementById('supplier').value.trim() || 'Desconhecido';
+            const deliveryStatus = document.getElementById('delivery-status').value;
             const notes = document.getElementById('notes').value.trim();
 
-            // Salvar Marca Customizada
             let finalBrand = selectBrand;
             if (selectBrand === '_outro_') {
                 if (!customBrand) {
@@ -1279,7 +1674,6 @@
                 }
             }
 
-            // Salvar Variação Customizada
             let finalVariation = selectVariation;
             if (selectVariation === '_outro_') {
                 if (!customVariation) {
@@ -1305,7 +1699,7 @@
                 if (idx !== -1) {
                     filaments[idx] = {
                         ...filaments[idx],
-                        brand: finalBrand, material, variation: finalVariation, colorName, colorHex, totalWeight, currentWeight, price, supplier, notes
+                        brand: finalBrand, material, variation: finalVariation, colorName, colorHex, totalWeight, currentWeight, price, supplier, notes, deliveryStatus
                     };
                     showToast(`Filamento ${colorName} atualizado com sucesso.`);
                 }
@@ -1322,6 +1716,7 @@
                     price,
                     supplier,
                     notes,
+                    deliveryStatus,
                     date: new Date().toISOString().split('T')[0]
                 };
                 filaments.push(novoFilamento);
@@ -1330,9 +1725,11 @@
 
             localStorage.setItem('filament_db', JSON.stringify(filaments));
             limparFormulario();
+            popularFiltrosEstoque();
             atualizarPainel();
             popularFiltrosCompra();
         }
+
 
         // CARREGAR INFORMAÇÕES NO FORM DE EDIÇÃO
         function prepararEdicao(id) {
@@ -1368,6 +1765,7 @@
             document.getElementById('current-weight').value = f.currentWeight;
             document.getElementById('price').value = f.price;
             document.getElementById('supplier').value = f.supplier === 'Desconhecido' ? '' : f.supplier;
+            document.getElementById('delivery-status').value = f.deliveryStatus || 'entregue';
             document.getElementById('notes').value = f.notes || '';
 
             document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500 animate-pulse"></i> Editando Filamento`;
@@ -1382,6 +1780,7 @@
             document.getElementById('filament-form').reset();
             document.getElementById('edit-id').value = '';
             document.getElementById('color-hex').value = '#4f46e5';
+            document.getElementById('delivery-status').value = 'entregue';
 
             document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-circle-plus text-indigo-500"></i> Cadastrar Filamento`;
             document.getElementById('submit-btn-text').textContent = 'Cadastrar no Estoque';
@@ -1392,36 +1791,30 @@
             mostrarDicasMaterial();
         }
 
+
         // DELETAR FILAMENTO
         function excluirFilamento(id) {
             const f = filaments.find(item => item.id === id);
-            if (confirm(`Deseja realmente remover permanentemente o filamento "${f.colorName}" do seu estoque?`)) {
-                filaments = filaments.filter(item => item.id !== id);
-                localStorage.setItem('filament_db', JSON.stringify(filaments));
-                atualizarPainel();
-                popularFiltrosCompra();
-                showToast("Filamento removido do estoque.", "warning");
-            }
+            if (!f) return;
+
+            showCustomConfirm(
+                "Remover Rolo", 
+                `Deseja realmente remover permanentemente o filamento "${f.colorName}" do seu estoque?`, 
+                () => {
+                    filaments = filaments.filter(item => item.id !== id);
+                    localStorage.setItem('filament_db', JSON.stringify(filaments));
+                    popularFiltrosEstoque();
+                    atualizarPainel();
+                    popularFiltrosCompra();
+                    showToast("Filamento removido do estoque.", "warning");
+                }
+            );
         }
 
-        // FILTROS DA LISTAGEM DE ESTOQUE ATIVO
         function filtrarLista() {
             renderizarListaFilamentos();
         }
 
-        function filtrarMaterialEstoque(material) {
-            currentStockFilterMaterial = material;
-            
-            document.querySelectorAll('.mat-filter-btn').forEach(btn => {
-                if (btn.getAttribute('data-material') === material) {
-                    btn.className = "mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg transition shrink-0";
-                } else {
-                    btn.className = "mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0";
-                }
-            });
-
-            renderizarListaFilamentos();
-        }
 
         // RENDERIZAR HISTÓRICO DE COMPRAS (ABA 2)
         function renderizarHistoricoCompras() {
@@ -1460,23 +1853,74 @@
                 emptyState.classList.add('hidden');
             }
 
+            filteredPurchases.sort((a, b) => {
+                let valA, valB;
+                if (purchaseSortColumn === 'colorName') {
+                    valA = a.colorName.toLowerCase();
+                    valB = b.colorName.toLowerCase();
+                } else if (purchaseSortColumn === 'brand') {
+                    valA = a.brand.toLowerCase();
+                    valB = b.brand.toLowerCase();
+                } else if (purchaseSortColumn === 'supplier') {
+                    valA = (a.supplier || '').toLowerCase();
+                    valB = (b.supplier || '').toLowerCase();
+                } else if (purchaseSortColumn === 'date') {
+                    valA = new Date(a.date).getTime() || 0;
+                    valB = new Date(b.date).getTime() || 0;
+                } else if (purchaseSortColumn === 'totalWeight') {
+                    valA = Number(a.totalWeight);
+                    valB = Number(b.totalWeight);
+                } else if (purchaseSortColumn === 'currentWeight') {
+                    valA = Number(a.currentWeight);
+                    valB = Number(b.currentWeight);
+                } else if (purchaseSortColumn === 'price') {
+                    valA = Number(a.price);
+                    valB = Number(b.price);
+                } else {
+                    valA = a.id;
+                    valB = b.id;
+                }
+
+                if (valA < valB) return purchaseSortDir === 'asc' ? -1 : 1;
+                if (valA > valB) return purchaseSortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            updateHeaderIcons('p', purchaseSortColumn, purchaseSortDir, ['colorName', 'brand', 'supplier', 'date', 'totalWeight', 'currentWeight', 'price']);
+
             let totalSpent = 0;
 
-            filteredPurchases.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(f => {
+            filteredPurchases.forEach(f => {
                 totalSpent += Number(f.price);
+                
+                let statusMarkup = '';
+                if (f.deliveryStatus === 'aguardando') {
+                    statusMarkup = `<span class="px-2.5 py-1 text-[11px] font-black bg-amber-950/60 border border-amber-900/50 text-amber-400 rounded-lg flex items-center gap-1.5 w-max"><i class="fa-solid fa-truck-ramp-box animate-pulse"></i> ⏳ Aguardando</span>`;
+                } else if (f.currentWeight <= 0) {
+                    statusMarkup = `<span class="px-2.5 py-1 text-[11px] font-bold bg-slate-950 border border-slate-850 text-slate-500 rounded-lg flex items-center gap-1 w-max">❌ Esgotado</span>`;
+                } else {
+                    const percentage = Math.round((f.currentWeight / f.totalWeight) * 100);
+                    let colorClass = 'text-indigo-400 bg-indigo-950/40 border-indigo-900/40';
+                    if (f.currentWeight < 150) colorClass = 'text-rose-400 bg-rose-950/40 border-rose-900/40';
+                    else if (f.currentWeight < 350) colorClass = 'text-amber-400 bg-amber-950/40 border-amber-900/40';
+                    
+                    statusMarkup = `<span class="px-2.5 py-1 text-[11px] font-bold border rounded-lg flex items-center gap-1.5 w-max ${colorClass}">${f.currentWeight}g (${percentage}%)</span>`;
+                }
+
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/20 transition duration-150';
                 tr.innerHTML = `
                     <td class="py-3.5 pl-4 flex items-center gap-2">
-                        <span class="w-3 h-3 rounded-full border border-slate-700 block" style="background-color: ${f.colorHex}"></span>
+                        <span class="w-3 h-3 rounded-full border border-slate-700 block shrink-0" style="background-color: ${f.colorHex}"></span>
                         <span class="font-bold text-white">${f.colorName}</span>
-                        <span class="text-[10px] text-slate-500 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800/40">${f.material} ${f.variation}</span>
+                        <span class="text-[10px] text-slate-500 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800/40 shrink-0">${f.material} ${f.variation}</span>
                     </td>
-                    <td class="py-3.5 text-slate-300 font-medium">${f.brand}</td>
-                    <td class="py-3.5 text-slate-400">${f.supplier}</td>
-                    <td class="py-3.5 text-slate-400">${formatarData(f.date)}</td>
-                    <td class="py-3.5 text-slate-400 font-semibold">${f.totalWeight}g</td>
-                    <td class="py-3.5 text-right pr-4 text-indigo-400 font-bold">R$ ${Number(f.price).toFixed(2).replace('.', ',')}</td>
+                    <td class="py-3.5 text-slate-300 font-bold">${f.brand}</td>
+                    <td class="py-3.5 text-slate-400 font-semibold">${f.supplier}</td>
+                    <td class="py-3.5 text-slate-400 font-semibold">${formatarData(f.date)}</td>
+                    <td class="py-3.5 text-slate-400 font-bold">${f.totalWeight}g</td>
+                    <td class="py-3.5">${statusMarkup}</td>
+                    <td class="py-3.5 text-right pr-4 text-indigo-400 font-black">R$ ${Number(f.price).toFixed(2).replace('.', ',')}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -1493,20 +1937,250 @@
             renderizarHistoricoCompras();
         }
 
-        /* =======================================================
-           SISTEMA AVANÇADO DE PROJETOS MULTICOMPONENTES (MODAL)
-           ======================================================= */
 
-        // Abrir Modal de Projeto
-        function abrirModalProjeto() {
-            // Verificar se temos filamentos disponíveis com saldo
-            const activeFilaments = filaments.filter(f => f.currentWeight > 0);
-            if (activeFilaments.length === 0) {
-                showToast("Você precisa ter filamentos ativos com peso disponível para criar um projeto!", "error");
+        // GERENCIAMENTO DE IMPRESSORAS (ABA 4)
+        function renderizarImpressoras() {
+            const container = document.getElementById('printers-container');
+            container.innerHTML = '';
+
+            if (printers.length === 0) {
+                container.innerHTML = `
+                    <div class="col-span-1 md:col-span-2 text-center py-10 text-slate-500 text-xs font-semibold">
+                        Nenhuma impressora cadastrada no sistema.
+                    </div>
+                `;
                 return;
             }
 
-            // Limpa campos do modal para criação de novo projeto
+            // Ordenando impressoras de acordo com os critérios selecionados
+            let sortedPrinters = [...printers];
+            sortedPrinters.sort((a, b) => {
+                let valA, valB;
+                if (printerSortColumn === 'name') {
+                    valA = a.name.toLowerCase();
+                    valB = b.name.toLowerCase();
+                } else if (printerSortColumn === 'powerWatts') {
+                    valA = Number(a.powerWatts);
+                    valB = Number(b.powerWatts);
+                } else if (printerSortColumn === 'notes') {
+                    valA = (a.notes || '').toLowerCase();
+                    valB = (b.notes || '').toLowerCase();
+                } else {
+                    valA = a.id;
+                    valB = b.id;
+                }
+
+                if (valA < valB) return printerSortDir === 'asc' ? -1 : 1;
+                if (valA > valB) return printerSortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            if (printerViewMode === 'grid') {
+                const gridDiv = document.createElement('div');
+                gridDiv.className = "grid grid-cols-1 md:grid-cols-2 gap-4";
+                container.appendChild(gridDiv);
+
+                sortedPrinters.forEach(p => {
+                    const card = document.createElement('div');
+                    card.className = "bg-slate-950 border border-slate-850 p-4 rounded-xl flex flex-col justify-between hover:border-slate-700 transition duration-250";
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-white text-sm flex items-center gap-2">
+                                    <i class="fa-solid fa-print text-indigo-400"></i> ${p.name}
+                                </h4>
+                                <span class="bg-indigo-950/80 border border-indigo-900 text-indigo-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0">
+                                    ${p.powerWatts} Watts
+                                </span>
+                            </div>
+                            ${p.notes ? `<p class="text-[11px] text-slate-400 italic font-medium line-clamp-2 mt-1 mb-2">${p.notes}</p>` : ''}
+                        </div>
+                        <div class="flex justify-end gap-1.5 pt-2 border-t border-slate-900 mt-2">
+                            <button onclick="prepararEdicaoImpressora(${p.id})" class="text-indigo-400 hover:bg-slate-900 p-1 rounded text-xs" title="Editar Máquina">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="excluirImpressora(${p.id})" class="text-rose-400 hover:bg-rose-950/20 p-1 rounded text-xs" title="Excluir Máquina">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    `;
+                    gridDiv.appendChild(card);
+                });
+            } else {
+                // Modo Tabela
+                let tbodyHtml = '';
+                sortedPrinters.forEach(p => {
+                    tbodyHtml += `
+                        <tr class="border-b border-slate-850 hover:bg-slate-800/20 transition">
+                            <td class="py-3 pl-4">
+                                <span class="font-bold text-white block leading-tight text-xs sm:text-sm">${p.name}</span>
+                            </td>
+                            <td class="py-3 font-bold text-indigo-400 text-xs">
+                                ${p.powerWatts} W
+                            </td>
+                            <td class="py-3 text-xs text-slate-400 italic max-w-xs truncate" title="${p.notes || ''}">
+                                ${p.notes || 'Sem observações'}
+                            </td>
+                            <td class="py-3 pr-4 text-right">
+                                <div class="flex justify-end gap-1.5">
+                                    <button onclick="prepararEdicaoImpressora(${p.id})" class="bg-slate-800 hover:bg-slate-750 text-indigo-400 p-1.5 rounded-lg transition text-xs" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button onclick="excluirImpressora(${p.id})" class="bg-slate-800 hover:bg-rose-950/40 text-rose-400 p-1.5 rounded-lg transition text-xs" title="Excluir">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                const tableWrap = document.createElement('div');
+                tableWrap.className = "bg-slate-950 border border-slate-850 rounded-2xl overflow-hidden shadow-xl";
+                tableWrap.innerHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400 select-none">
+                                    <th onclick="togglePrinterSort('name')" class="py-3 pl-4 cursor-pointer hover:text-white transition">Modelo ${getSortIcon(printerSortColumn, 'name', printerSortDir)}</th>
+                                    <th onclick="togglePrinterSort('powerWatts')" class="py-3 cursor-pointer hover:text-white transition">Consumo ${getSortIcon(printerSortColumn, 'powerWatts', printerSortDir)}</th>
+                                    <th onclick="togglePrinterSort('notes')" class="py-3 cursor-pointer hover:text-white transition">Observações ${getSortIcon(printerSortColumn, 'notes', printerSortDir)}</th>
+                                    <th class="py-3 pr-4 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-850 text-slate-300 font-medium">
+                                ${tbodyHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(tableWrap);
+            }
+
+            // Atualiza select do modal de projetos
+            popularSelectImpressorasModal();
+        }
+
+        function popularSelectImpressorasModal() {
+            const select = document.getElementById('proj-printer-select');
+            select.innerHTML = '';
+
+            if (printers.length === 0) {
+                select.innerHTML = '<option value="">CADASTRAR IMPRESSORA NA ABA HARDWARE FIRST</option>';
+                return;
+            }
+
+            printers.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = `${p.name} (${p.powerWatts}W)`;
+                select.appendChild(opt);
+            });
+        }
+
+        function salvarImpressora(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('printer-edit-id').value;
+            const name = document.getElementById('printer-name').value.trim();
+            const powerWatts = Number(document.getElementById('printer-power').value);
+            const notes = document.getElementById('printer-notes').value.trim();
+
+            if (id) {
+                const idx = printers.findIndex(p => p.id === Number(id));
+                if (idx !== -1) {
+                    printers[idx] = { ...printers[idx], name, powerWatts, notes };
+                    showToast(`Impressora "${name}" atualizada com sucesso.`);
+                }
+            } else {
+                const nova = {
+                    id: Date.now(),
+                    name,
+                    powerWatts,
+                    notes
+                };
+                printers.push(nova);
+                showToast(`Impressora "${name}" cadastrada com sucesso.`);
+            }
+
+            localStorage.setItem('printers_db', JSON.stringify(printers));
+            limparFormularioImpressora();
+            renderizarImpressoras();
+        }
+
+        function prepararEdicaoImpressora(id) {
+            const p = printers.find(item => item.id === id);
+            if (!p) return;
+
+            document.getElementById('printer-edit-id').value = p.id;
+            document.getElementById('printer-name').value = p.name;
+            document.getElementById('printer-power').value = p.powerWatts;
+            document.getElementById('printer-notes').value = p.notes || '';
+
+            document.getElementById('printer-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500 animate-pulse"></i> Editando Impressora`;
+            document.getElementById('printer-submit-btn-text').textContent = 'Salvar Alterações';
+            document.getElementById('cancel-printer-edit-btn').classList.remove('hidden');
+
+            window.scrollTo({ top: document.getElementById('tab-hardware').offsetTop, behavior: 'smooth' });
+        }
+
+        function limparFormularioImpressora() {
+            document.getElementById('printer-form').reset();
+            document.getElementById('printer-edit-id').value = '';
+
+            document.getElementById('printer-form-title').innerHTML = `<i class="fa-solid fa-plus-circle text-indigo-500"></i> Cadastrar Impressora`;
+            document.getElementById('printer-submit-btn-text').textContent = 'Cadastrar Impressora';
+            document.getElementById('cancel-printer-edit-btn').classList.add('hidden');
+        }
+
+        function excluirImpressora(id) {
+            const p = printers.find(item => item.id === id);
+            if (!p) return;
+
+            showCustomConfirm(
+                "Remover Impressora", 
+                `Deseja realmente remover a impressora "${p.name}"? (Sistemas antigos não serão afetados, mas novos projetos não poderão associá-la)`, 
+                () => {
+                    printers = printers.filter(item => item.id !== id);
+                    localStorage.setItem('printers_db', JSON.stringify(printers));
+                    renderizarImpressoras();
+                    showToast("Impressora removida com sucesso.", "warning");
+                }
+            );
+        }
+
+        // SALVAR PARÂMETROS GERAIS: TARIFA ENERGÉTICA
+        function salvarTarifaEnergia() {
+            const input = document.getElementById('energy-rate-input');
+            const valor = parseFloat(input.value);
+
+            if (isNaN(valor) || valor < 0) {
+                showToast("Por favor, informe uma tarifa de energia válida e maior ou igual a zero.", "error");
+                return;
+            }
+
+            energyRatePerKwh = valor;
+            localStorage.setItem('energy_rate_db', energyRatePerKwh.toString());
+            showToast(`Tarifa elétrica redefinida com sucesso para R$ ${energyRatePerKwh.toFixed(4)} por kW/h.`);
+        }
+
+
+        // SISTEMA DE CRIAÇÃO E PROCESSAMENTO DE PROJETOS MULTICOMPONENTES
+        function abrirModalProjeto() {
+            // Validar se tem impressora cadastrada
+            if (printers.length === 0) {
+                showToast("Por favor, cadastre ao menos uma impressora na aba 'Impressoras & Parâmetros' para poder registrar projetos!", "error");
+                switchTab('tab-hardware');
+                return;
+            }
+
+            // Filtrar rolos que estão no estoque e não estão aguardando entrega
+            const activeFilaments = filaments.filter(f => f.currentWeight > 0 && f.deliveryStatus !== 'aguardando');
+            if (activeFilaments.length === 0) {
+                showToast("Você precisa ter filamentos entregues e ativos com saldo em gramas para poder criar um projeto!", "error");
+                return;
+            }
+
             document.getElementById('proj-edit-id').value = '';
             document.getElementById('proj-name').value = '';
             document.getElementById('proj-notes').value = '';
@@ -1520,6 +2194,7 @@
 
             // Inicia com uma linha de filamento padrão
             adicionarLinhaFilamento();
+            popularSelectImpressorasModal();
             
             // Reseta Status
             document.querySelector('input[name="proj-status"][value="sucesso"]').checked = true;
@@ -1527,7 +2202,6 @@
             toggleProjStatusFields();
 
             recalcularTotaisProjeto();
-
             document.getElementById('project-modal').classList.remove('hidden');
         }
 
@@ -1535,22 +2209,18 @@
             document.getElementById('project-modal').classList.add('hidden');
         }
 
-        // Adicionar Linha de Filamento Usado no Projeto (Suporta dados pré-carregados para Edição)
         function adicionarLinhaFilamento(savedId = null, savedWeight = null) {
             const container = document.getElementById('proj-filaments-container');
             const rowId = 'fil-row-' + Date.now() + '-' + Math.floor(Math.random() * 100);
 
-            // Popula as opções com filamentos que têm peso ativo
             let optionsHtml = '';
             filaments.forEach(f => {
-                // Se for o filamento que já estava salvo no projeto, permite ele aparecer mesmo se o peso atual for zero agora (para edição lógica consistente)
-                if (f.currentWeight > 0 || f.id === savedId) {
+                if ((f.currentWeight > 0 && f.deliveryStatus !== 'aguardando') || f.id === savedId) {
                     const isSelected = f.id === savedId ? 'selected' : '';
                     optionsHtml += `<option value="${f.id}" data-price="${f.price}" data-totalweight="${f.totalWeight}" data-currentweight="${f.currentWeight}" ${isSelected}>${f.brand} ${f.material} (${f.colorName}) - Disp: ${f.currentWeight}g</option>`;
                 }
             });
 
-            // Se o filamento original do projeto não foi achado no estoque de filamentos (foi excluído no meio do caminho)
             if (savedId && !filaments.some(f => f.id === savedId)) {
                 optionsHtml += `<option value="${savedId}" data-price="0" data-totalweight="1000" data-currentweight="0" selected>[FILAMENTO EXCLUÍDO DO ESTOQUE]</option>`;
             }
@@ -1558,7 +2228,7 @@
             const weightVal = savedWeight !== null ? savedWeight : '';
 
             const rowHtml = `
-                <div id="${rowId}" class="flex flex-wrap items-center gap-2.5 bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs">
+                <div id="${rowId}" class="flex flex-wrap items-center gap-2.5 bg-slate-900 border border-slate-850 p-2.5 rounded-xl text-xs">
                     <div class="flex-grow min-w-[200px]">
                         <label class="block text-[10px] font-bold text-slate-400 mb-1">Escolha o Filamento</label>
                         <select onchange="recalcularTotaisProjeto()" class="filament-select w-full bg-slate-950 border border-slate-850 px-2 py-1.5 rounded-lg text-white outline-none">
@@ -1582,7 +2252,6 @@
             recalcularTotaisProjeto();
         }
 
-        // Adicionar Linha de Custo Extra / Acessórios (Imãs, Chaveiros, etc)
         function adicionarLinhaExtra(savedName = '', savedCost = null) {
             const container = document.getElementById('proj-extras-container');
             const rowId = 'ext-row-' + Date.now() + '-' + Math.floor(Math.random() * 100);
@@ -1590,14 +2259,14 @@
             const costVal = savedCost !== null ? savedCost : '';
 
             const rowHtml = `
-                <div id="${rowId}" class="flex items-center gap-2.5 bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs">
+                <div id="${rowId}" class="flex items-center gap-2.5 bg-slate-900 border border-slate-850 p-2.5 rounded-xl text-xs">
                     <div class="flex-grow">
                         <label class="block text-[10px] font-bold text-slate-400 mb-1">Acessório / Detalhe</label>
-                        <input type="text" placeholder="Ex: Chaveiro Argola, Imã 8mm, LED USB" value="${savedName}" required class="extra-name w-full bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-lg text-white outline-none">
+                        <input type="text" placeholder="Ex: Chaveiro Argola, Imã 8mm" value="${savedName}" required class="extra-name w-full bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-lg text-white outline-none">
                     </div>
                     <div class="w-24">
                         <label class="block text-[10px] font-bold text-slate-400 mb-1">Custo (R$)</label>
-                        <input type="number" step="0.01" min="0" placeholder="Ex: 1.50" value="${costVal}" oninput="recalcularTotaisProjeto()" required class="extra-cost w-full bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-lg text-white text-center font-bold outline-none">
+                        <input type="number" step="0.01" min="0" placeholder="Ex: 1.50" value="${costVal}" oninput="recalcularTotaisProjeto()" required class="extra-cost w-full bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-lg text-white text-center font-bold outline-none font-semibold">
                     </div>
                     <button type="button" onclick="removerLinha('${rowId}')" class="text-rose-500 hover:text-rose-400 p-1.5 mt-4" title="Remover acessório">
                         <i class="fa-solid fa-trash-can"></i>
@@ -1608,7 +2277,6 @@
             recalcularTotaisProjeto();
         }
 
-        // Remover linha de qualquer container
         function removerLinha(id) {
             const el = document.getElementById(id);
             if (el) {
@@ -1617,7 +2285,6 @@
             }
         }
 
-        // Controlar visualização de campos dinâmicos por resultado
         function toggleProjStatusFields() {
             const status = document.querySelector('input[name="proj-status"]:checked').value;
             const successDiv = document.getElementById('proj-status-success');
@@ -1632,7 +2299,6 @@
             }
         }
 
-        // Setar avaliação de estrelas no modal do projeto
         function setProjRating(val) {
             document.getElementById('proj-rating').value = val;
             const starBtns = document.querySelectorAll('.proj-star-btn');
@@ -1645,10 +2311,12 @@
             });
         }
 
-        // RECALCULAR TOTAIS FINANCEIROS DO PROJETO EM TEMPO REAL
+
+        // CÁLCULO DE CUSTOS DE MATERIAL, EXTRAS E ENERGIA EM TEMPO REAL
         function recalcularTotaisProjeto() {
             let totalFilamentsCost = 0;
             let totalExtrasCost = 0;
+            let totalEnergyCost = 0;
 
             // 1. Processar Custos de Filamentos
             const filRows = document.querySelectorAll('#proj-filaments-container > div');
@@ -1665,7 +2333,6 @@
                         const price = Number(option.getAttribute('data-price')) || 0;
                         const totalWeight = Number(option.getAttribute('data-totalweight')) || 1000;
                         
-                        // Custo = Peso Gasto * (Preço / Peso Inicial)
                         const rowCost = weight * (price / totalWeight);
                         totalFilamentsCost += rowCost;
 
@@ -1684,15 +2351,36 @@
                 }
             });
 
-            // 3. Atualizar Layout do Resumo
+            // 3. Processar Custos Energéticos (Eletricidade)
+            const printerSelect = document.getElementById('proj-printer-select');
+            const hoursVal = Number(document.getElementById('proj-time-hours').value) || 0;
+            const minsVal = Number(document.getElementById('proj-time-minutes').value) || 0;
+
+            if (printerSelect && printerSelect.value) {
+                const printerId = Number(printerSelect.value);
+                const printerObj = printers.find(p => p.id === printerId);
+                
+                if (printerObj) {
+                    const watts = printerObj.powerWatts;
+                    const tempoTotalHoras = hoursVal + (minsVal / 60);
+                    
+                    // Energia consumida (kWh) = (Watts / 1000) * Horas
+                    // Custo Elétrico = kWh * Custo por kWh
+                    totalEnergyCost = (watts / 1000) * tempoTotalHoras * energyRatePerKwh;
+                }
+            }
+
+            // 4. Exibir dados na interface do modal
             document.getElementById('sum-filaments-cost').textContent = `R$ ${totalFilamentsCost.toFixed(2).replace('.', ',')}`;
             document.getElementById('sum-extras-cost').textContent = `R$ ${totalExtrasCost.toFixed(2).replace('.', ',')}`;
+            document.getElementById('sum-energy-cost').textContent = `R$ ${totalEnergyCost.toFixed(2).replace('.', ',')}`;
             
-            const grandTotal = totalFilamentsCost + totalExtrasCost;
+            const grandTotal = totalFilamentsCost + totalExtrasCost + totalEnergyCost;
             document.getElementById('sum-grand-total').textContent = `R$ ${grandTotal.toFixed(2).replace('.', ',')}`;
         }
 
-        // CONFIRMAR E REGISTRAR O PROJETO (DEDUÇÃO/ESTORNO DE ESTOQUE + LOGS)
+
+        // SALVAR E CONCLUIR PROJETO
         function confirmarProjeto(event) {
             event.preventDefault();
 
@@ -1705,10 +2393,22 @@
             const rating = status === 'sucesso' ? Number(document.getElementById('proj-rating').value) : 0;
             const failureReason = status === 'falha' ? document.getElementById('proj-failure-reason').value : '';
 
-            // Guardar uma cópia dos filamentos originais para caso de rollback caso a operação falhe
+            const printerSelect = document.getElementById('proj-printer-select');
+            if (!printerSelect.value) {
+                showToast("Selecione uma impressora válida.", "error");
+                return;
+            }
+
+            const printerId = Number(printerSelect.value);
+            const associatedPrinter = printers.find(p => p.id === printerId);
+            if (!associatedPrinter) {
+                showToast("Impressora selecionada inválida.", "error");
+                return;
+            }
+
             const originalFilamentsCopy = JSON.parse(JSON.stringify(filaments));
 
-            // ESTORNO SE FOR EDIÇÃO: Se estamos editando um projeto, primeiro de tudo precisamos estornar o peso que foi gasto no projeto original de volta para o estoque!
+            // Estorno de pesos se for edição lógica
             if (editId) {
                 const originalProject = printHistory.find(p => p.id === Number(editId));
                 if (originalProject && originalProject.filamentsUsed) {
@@ -1721,11 +2421,8 @@
                 }
             }
 
-            // Arrays de dados de uso do projeto
             let filamentsUsed = [];
             let extraCosts = [];
-
-            // Validações de peso e consistência
             let weightExceeded = false;
             let noMaterials = true;
 
@@ -1748,7 +2445,6 @@
                     const price = Number(option.getAttribute('data-price')) || 0;
                     const totalWeight = Number(option.getAttribute('data-totalweight')) || 1000;
 
-                    // Encontrar rolo no estoque para descontar novo peso
                     const realFilament = filaments.find(f => f.id === filamentId);
                     if (realFilament) {
                         if (weightUsed > realFilament.currentWeight) {
@@ -1775,13 +2471,11 @@
 
             if (noMaterials) {
                 showToast("Por favor, adicione pelo menos um filamento ao seu projeto.", "error");
-                // Em caso de falha de validação, restaura o backup de pesos para não perder consistência
                 filaments = originalFilamentsCopy;
                 return;
             }
 
             if (weightExceeded) {
-                // Em caso de falha, desfaz o estorno e volta ao estado anterior
                 filaments = originalFilamentsCopy;
                 return;
             }
@@ -1803,7 +2497,11 @@
                 }
             });
 
-            // Deduzir peso do estoque real
+            // Calcular o custo real de eletricidade gasto (Com base nas configurações ATUAIS)
+            const tempoTotalHoras = durationHours + (durationMinutes / 60);
+            const calculatedEnergyCost = (associatedPrinter.powerWatts / 1000) * tempoTotalHoras * energyRatePerKwh;
+
+            // Deduzir peso real do estoque físico
             filamentsUsed.forEach(item => {
                 const fIndex = filaments.findIndex(f => f.id === item.filamentId);
                 if (fIndex !== -1) {
@@ -1811,44 +2509,53 @@
                 }
             });
 
-            // Calcular totais finais
             const totalFilamentCost = filamentsUsed.reduce((acc, f) => acc + f.cost, 0);
             const totalExtraCost = extraCosts.reduce((acc, e) => acc + e.cost, 0);
-            const grandTotalCost = totalFilamentCost + totalExtraCost;
+            
+            // Custo total final do projeto (Filamento + Extras + Energia)
+            const grandTotalCost = totalFilamentCost + totalExtraCost + calculatedEnergyCost;
 
             if (editId) {
-                // Atualizar projeto existente
                 const projectIndex = printHistory.findIndex(p => p.id === Number(editId));
                 if (projectIndex !== -1) {
                     printHistory[projectIndex] = {
                         ...printHistory[projectIndex],
                         pieceName: name,
-                        notes: notes,
-                        status: status,
-                        rating: rating,
-                        failureReason: failureReason,
+                        notes,
+                        status,
+                        rating,
+                        failureReason,
                         durationHours,
                         durationMinutes,
+                        printerId: associatedPrinter.id,
+                        printerName: associatedPrinter.name,
+                        printerWatts: associatedPrinter.powerWatts,
+                        energyCost: Number(calculatedEnergyCost.toFixed(4)),
+                        energyRate: energyRatePerKwh, // Memoriza a taxa da época
                         filamentsUsed,
                         extraCosts,
                         totalFilamentCost: Number(totalFilamentCost.toFixed(2)),
                         totalExtraCost: Number(totalExtraCost.toFixed(2)),
                         grandTotalCost: Number(grandTotalCost.toFixed(2))
                     };
-                    showToast(`Projeto "${name}" editado e estoque recalculado!`);
+                    showToast(`Projeto "${name}" editado e estoque atualizado!`);
                 }
             } else {
-                // Criar entrada no histórico
                 const projectEntry = {
                     id: Date.now(),
                     pieceName: name,
-                    notes: notes,
+                    notes,
                     date: new Date().toISOString(),
-                    status: status,
-                    rating: rating,
-                    failureReason: failureReason,
+                    status,
+                    rating,
+                    failureReason,
                     durationHours,
                     durationMinutes,
+                    printerId: associatedPrinter.id,
+                    printerName: associatedPrinter.name,
+                    printerWatts: associatedPrinter.powerWatts,
+                    energyCost: Number(calculatedEnergyCost.toFixed(4)),
+                    energyRate: energyRatePerKwh, // Salva o valor KW/h no projeto
                     filamentsUsed,
                     extraCosts,
                     totalFilamentCost: Number(totalFilamentCost.toFixed(2)),
@@ -1859,31 +2566,28 @@
                 showToast(`Projeto "${name}" registrado com sucesso!`);
             }
 
-            // Salvar no LocalStorage
             localStorage.setItem('filament_db', JSON.stringify(filaments));
             localStorage.setItem('print_history_db', JSON.stringify(printHistory));
 
             fecharModalProjeto();
             atualizarPainel();
 
-            // Se a aba atual for a de histórico, atualiza na hora
             if (!document.getElementById('tab-prints').classList.contains('hidden')) {
                 renderizarHistoricoPrints();
                 atualizarMetricasConfiabilidade();
             }
         }
 
-        // PREPARAR EDIÇÃO DE PROJETO SALVO
+
+        // CARREGAR DADOS DE PROJETO PARA EDIÇÃO
         function prepararEdicaoProjeto(id) {
             const project = printHistory.find(p => p.id === id);
             if (!project) return;
 
-            // Abrir e estilizar modal para edição
             document.getElementById('project-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500 animate-pulse"></i> Editar Projeto 3D`;
             document.getElementById('project-submit-btn').textContent = "Salvar Alterações";
             document.getElementById('proj-edit-id').value = project.id;
 
-            // Preencher campos
             document.getElementById('proj-name').value = project.pieceName;
             document.getElementById('proj-notes').value = project.notes || '';
             document.getElementById('proj-time-hours').value = project.durationHours !== undefined ? project.durationHours : '';
@@ -1892,6 +2596,10 @@
             // Limpar containers dinâmicos
             document.getElementById('proj-filaments-container').innerHTML = '';
             document.getElementById('proj-extras-container').innerHTML = '';
+
+            // Popular impressoras e selecionar a associada
+            popularSelectImpressorasModal();
+            document.getElementById('proj-printer-select').value = project.printerId || '';
 
             // Reconstruir linhas de filamentos usados
             if (project.filamentsUsed && project.filamentsUsed.length > 0) {
@@ -1920,39 +2628,42 @@
             toggleProjStatusFields();
             recalcularTotaisProjeto();
 
-            // Abre o modal
             document.getElementById('project-modal').classList.remove('hidden');
         }
+
 
         // EXCLUIR PROJETO DO HISTÓRICO COM REVERSÃO DE PESO
         function excluirProjeto(id) {
             const project = printHistory.find(p => p.id === id);
             if (!project) return;
 
-            if (confirm(`Deseja realmente excluir o projeto "${project.pieceName}"? O peso dos filamentos consumidos será devolvido ao seu estoque!`)) {
-                // Devolver os pesos de volta aos rolos
-                if (project.filamentsUsed) {
-                    project.filamentsUsed.forEach(item => {
-                        const fIdx = filaments.findIndex(f => f.id === item.filamentId);
-                        if (fIdx !== -1) {
-                            filaments[fIdx].currentWeight += item.weightUsed;
-                        }
-                    });
+            showCustomConfirm(
+                "Remover Projeto", 
+                `Deseja realmente excluir o projeto "${project.pieceName}"? O peso dos filamentos consumidos será devolvido ao seu estoque de rolos ativos de forma imediata!`, 
+                () => {
+                    if (project.filamentsUsed) {
+                        project.filamentsUsed.forEach(item => {
+                            const fIdx = filaments.findIndex(f => f.id === item.filamentId);
+                            if (fIdx !== -1) {
+                                filaments[fIdx].currentWeight += item.weightUsed;
+                            }
+                        });
+                    }
+
+                    printHistory = printHistory.filter(p => p.id !== id);
+                    localStorage.setItem('filament_db', JSON.stringify(filaments));
+                    localStorage.setItem('print_history_db', JSON.stringify(printHistory));
+
+                    atualizarPainel();
+                    renderizarHistoricoPrints();
+                    atualizarMetricasConfiabilidade();
+                    showToast(`Projeto "${project.pieceName}" deletado. Estoque físico estornado.`, "warning");
                 }
-
-                // Filtrar e salvar
-                printHistory = printHistory.filter(p => p.id !== id);
-                localStorage.setItem('filament_db', JSON.stringify(filaments));
-                localStorage.setItem('print_history_db', JSON.stringify(printHistory));
-
-                atualizarPainel();
-                renderizarHistoricoPrints();
-                atualizarMetricasConfiabilidade();
-                showToast(`Projeto "${project.pieceName}" deletado. Peso estornado ao estoque.`, "warning");
-            }
+            );
         }
 
-        // RENDERIZAR ABA DE IMPRESSÕES & DIAGNÓSTICO DE CONFIABILIDADE (ABA 3)
+
+        // RENDERIZAR HISTÓRICO DE PROJETOS E DADOS ENERGÉTICOS (ABA 3)
         function renderizarHistoricoPrints() {
             const tbody = document.getElementById('history-tbody');
             const emptyState = document.getElementById('empty-history-state');
@@ -1965,31 +2676,55 @@
                 emptyState.classList.add('hidden');
             }
 
-            [...printHistory].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(h => {
+            let sortedPrints = [...printHistory];
+            sortedPrints.sort((a, b) => {
+                let valA, valB;
+                if (projectSortColumn === 'pieceName') {
+                    valA = a.pieceName.toLowerCase();
+                    valB = b.pieceName.toLowerCase();
+                } else if (projectSortColumn === 'date') {
+                    valA = new Date(a.date).getTime() || 0;
+                    valB = new Date(b.date).getTime() || 0;
+                } else if (projectSortColumn === 'status') {
+                    valA = `${a.status} ${a.rating || 0}`.toLowerCase();
+                    valB = `${b.status} ${b.rating || 0}`.toLowerCase();
+                } else if (projectSortColumn === 'grandTotalCost') {
+                    valA = Number(a.grandTotalCost) || 0;
+                    valB = Number(b.grandTotalCost) || 0;
+                } else {
+                    valA = a.id;
+                    valB = b.id;
+                }
+
+                if (valA < valB) return projectSortDir === 'asc' ? -1 : 1;
+                if (valA > valB) return projectSortDir === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            updateHeaderIcons('proj', projectSortColumn, projectSortDir, ['pieceName', 'date', 'status', 'grandTotalCost']);
+
+            sortedPrints.forEach(h => {
                 const tr = document.createElement('tr');
                 tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/20 transition duration-150';
 
-                // Garantia de filamentos usados
                 const filamentsList = h.filamentsUsed || [];
                 const extrasList = h.extraCosts || [];
 
-                // 1. Renderizar coluna de materiais de forma compacta e moderna
                 let materialsMarkup = '<div class="space-y-1 py-1">';
                 filamentsList.forEach(item => {
                     materialsMarkup += `
                         <div class="flex items-center gap-1.5 text-xs text-slate-300">
                             <span class="w-2.5 h-2.5 rounded-full border border-slate-700 block shrink-0" style="background-color: ${item.colorHex}"></span>
                             <span class="font-bold text-white">${item.brand} ${item.material}</span>
-                            <span class="text-slate-500 font-medium">(${item.weightUsed}g)</span>
+                            <span class="text-slate-500 font-semibold">(${item.weightUsed}g)</span>
                         </div>
                     `;
                 });
                 materialsMarkup += '</div>';
 
-                // 2. Renderizar coluna de extras
-                let extrasMarkup = '<div class="space-y-1 py-1 text-slate-400 text-xs">';
-                if (extrasList.length === 0) {
-                    extrasMarkup += '<span class="text-slate-600 font-medium italic">Sem acessórios</span>';
+                let extrasMarkup = '<div class="space-y-1 py-1 text-slate-400 text-xs font-semibold">';
+                if (extrasList.length === 0 && (!h.energyCost || h.energyCost <= 0)) {
+                    extrasMarkup += '<span class="text-slate-600 font-bold italic">Sem custos extras</span>';
                 } else {
                     extrasList.forEach(item => {
                         extrasMarkup += `
@@ -1999,10 +2734,18 @@
                             </div>
                         `;
                     });
+
+                    if (h.energyCost && h.energyCost > 0) {
+                        extrasMarkup += `
+                            <div class="flex items-center gap-1 text-amber-400">
+                                <i class="fa-solid fa-bolt text-[10px] text-amber-500"></i>
+                                <span>Eletricidade <span class="text-amber-500 font-bold">(R$ ${Number(h.energyCost).toFixed(2).replace('.', ',')})</span></span>
+                            </div>
+                        `;
+                    }
                 }
                 extrasMarkup += '</div>';
 
-                // 3. Renderizar coluna de status / qualidade
                 let statusMarkup = '';
                 if (h.status === 'sucesso') {
                     let stars = '';
@@ -2016,25 +2759,27 @@
                     }
                     statusMarkup = `
                         <div class="flex flex-col">
-                            <span class="text-emerald-400 font-bold text-xs flex items-center gap-1"><i class="fa-solid fa-circle-check text-[10px]"></i> Sucesso</span>
+                            <span class="text-emerald-400 font-black text-xs flex items-center gap-1"><i class="fa-solid fa-circle-check text-[10px]"></i> Sucesso</span>
                             <div class="flex gap-0.5 mt-0.5">${stars}</div>
                         </div>
                     `;
                 } else {
                     statusMarkup = `
                         <div class="flex flex-col">
-                            <span class="text-rose-400 font-bold text-xs flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-[10px]"></i> Falha</span>
+                            <span class="text-rose-400 font-black text-xs flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-[10px]"></i> Falha</span>
                             <span class="text-[9px] text-rose-500 font-black leading-tight max-w-[130px] break-words">${h.failureReason || 'Não informado'}</span>
                         </div>
                     `;
                 }
 
-                // Formatação do tempo de execução
-                let timeBadge = '';
+                let timeAndPrinterBadge = '';
                 if ((h.durationHours !== undefined && h.durationHours > 0) || (h.durationMinutes !== undefined && h.durationMinutes > 0)) {
                     const hoursText = h.durationHours ? `${h.durationHours}h` : '';
                     const minsText = h.durationMinutes ? `${h.durationMinutes}min` : '';
-                    timeBadge = `<span class="bg-indigo-950 text-indigo-400 border border-indigo-900/40 px-1.5 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-clock"></i> ${hoursText} ${minsText}</span>`;
+                    timeAndPrinterBadge += `<span class="bg-indigo-950 text-indigo-400 border border-indigo-900/40 px-1.5 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-clock"></i> ${hoursText} ${minsText}</span>`;
+                }
+                if (h.printerName) {
+                    timeAndPrinterBadge += `<span class="bg-slate-950 text-slate-400 border border-slate-850 px-1.5 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 mt-1 ml-1"><i class="fa-solid fa-print"></i> ${h.printerName}</span>`;
                 }
 
                 const displayTotalCost = h.grandTotalCost || 0;
@@ -2045,13 +2790,13 @@
                         <span class="text-xs text-slate-400 block max-w-[200px] truncate italic" title="${h.notes || ''}">${h.notes || 'Sem observações'}</span>
                     </td>
                     <td class="py-3">
-                        <span class="text-xs text-slate-400 block">${formatarDataCompleta(h.date)}</span>
-                        ${timeBadge}
+                        <span class="text-xs text-slate-400 block font-semibold">${formatarDataCompleta(h.date)}</span>
+                        <div class="flex flex-wrap gap-1">${timeAndPrinterBadge}</div>
                     </td>
                     <td class="py-3">${materialsMarkup}</td>
                     <td class="py-3">${extrasMarkup}</td>
                     <td class="py-3">${statusMarkup}</td>
-                    <td class="py-3 text-emerald-400 font-black text-sm">R$ ${displayTotalCost.toFixed(2).replace('.', ',')}</td>
+                    <td class="py-3 text-right pr-4 text-emerald-400 font-black text-sm">R$ ${displayTotalCost.toFixed(2).replace('.', ',')}</td>
                     <td class="py-3 pr-4 text-right">
                         <div class="flex justify-end gap-1">
                             <button onclick="prepararEdicaoProjeto(${h.id})" class="text-indigo-400 hover:bg-slate-800 p-1.5 rounded transition" title="Editar Projeto">
@@ -2067,6 +2812,7 @@
             });
         }
 
+
         // CALCULAR METRICAS DE CONFIABILIDADE DO PAINEL GERAL DE PROJETOS
         function atualizarMetricasConfiabilidade() {
             const total = printHistory.length;
@@ -2074,7 +2820,7 @@
 
             if (total === 0) {
                 document.getElementById('stat-print-success-rate').textContent = '0.0%';
-                document.getElementById('stat-main-failure-reason').textContent = 'Nenhum';
+                document.getElementById('stat-main-failure-reason').textContent = 'Nenhuma';
                 return;
             }
 
@@ -2084,7 +2830,7 @@
 
             const falhas = printHistory.filter(h => h.status === 'falha');
             if (falhas.length === 0) {
-                document.getElementById('stat-main-failure-reason').textContent = 'Nenhum';
+                document.getElementById('stat-main-failure-reason').textContent = 'Nenhuma';
                 return;
             }
 
@@ -2094,7 +2840,7 @@
                 frequency[reason] = (frequency[reason] || 0) + 1;
             });
 
-            let mainFailure = 'Nenhum';
+            let mainFailure = 'Nenhuma';
             let maxCount = 0;
             for (const reason in frequency) {
                 if (frequency[reason] > maxCount) {
@@ -2108,22 +2854,29 @@
 
         // LIMPAR HISTÓRICO DE CONSUMO
         function limparHistorico() {
-            if (confirm("Você quer deletar permanentemente todo o histórico de uso dos filamentos? Seu estoque atual não sofrerá alteração.")) {
-                printHistory = [];
-                localStorage.setItem('print_history_db', JSON.stringify(printHistory));
-                atualizarMetricasConfiabilidade();
-                renderizarHistoricoPrints();
-                showToast("Histórico de consumo resetado.", "warning");
-            }
+            showCustomConfirm(
+                "Resetar Histórico", 
+                "Você quer deletar permanentemente todo o histórico de uso dos filamentos? Seu estoque atual NÃO sofrerá alteração.", 
+                () => {
+                    printHistory = [];
+                    localStorage.setItem('print_history_db', JSON.stringify(printHistory));
+                    atualizarMetricasConfiabilidade();
+                    renderizarHistoricoPrints();
+                    showToast("Histórico de consumo resetado.", "warning");
+                }
+            );
         }
+
 
         // EXPORTAR DADOS DE CONFIGURAÇÃO (BACKUP)
         function exportarDados() {
             const backup = {
                 filaments,
                 printHistory,
+                printers,
                 brands,
-                variations
+                variations,
+                energyRatePerKwh
             };
             const jsonStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(backup, null, 2))}`;
             const dlAnchor = document.createElement('a');
@@ -2132,7 +2885,7 @@
             document.body.appendChild(dlAnchor);
             dlAnchor.click();
             dlAnchor.remove();
-            showToast("Backup exportado para sua máquina!");
+            showToast("Backup exportado com sucesso!");
         }
 
         // IMPORTAR DADOS DE BACKUP
@@ -2148,18 +2901,26 @@
                     if (parsed.filaments && Array.isArray(parsed.filaments)) {
                         filaments = parsed.filaments;
                         printHistory = parsed.printHistory || [];
+                        printers = parsed.printers || initialMockPrinters;
                         brands = parsed.brands || ['eSUN', '3D Prime', 'GTMax', 'Slicex', 'Voolt3D', 'Creality', 'Hatchbox'];
                         variations = parsed.variations || ['Normal', 'Silk', 'Plus', 'CF', 'Matte', 'Wood'];
+                        energyRatePerKwh = parsed.energyRatePerKwh || 0.85;
                         
                         localStorage.setItem('filament_db', JSON.stringify(filaments));
                         localStorage.setItem('print_history_db', JSON.stringify(printHistory));
+                        localStorage.setItem('printers_db', JSON.stringify(printers));
                         localStorage.setItem('brands_db', JSON.stringify(brands));
                         localStorage.setItem('variations_db', JSON.stringify(variations));
+                        localStorage.setItem('energy_rate_db', energyRatePerKwh.toString());
+
+                        document.getElementById('energy-rate-input').value = energyRatePerKwh;
 
                         popularSelectMarcas();
                         popularSelectVariacoes();
+                        popularFiltrosEstoque();
                         popularFiltrosCompra();
                         atualizarPainel();
+                        renderizarImpressoras();
                         
                         showToast("Configurações importadas com absoluto sucesso!");
                     } else {
