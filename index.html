@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PrimetechHub 3D - Gestão Inteligente de Filamentos</title>
+    <!-- Tailwind CSS para um visual moderno e limpo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para ícones incríveis -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Plus Jakarta Sans', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Ajuste fino para scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
+
+    <!-- CONTAINER PRINCIPAL DOS TOASTS (NOTIFICAÇÕES CUSTOMIZADAS) -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <div class="min-h-screen flex flex-col">
+        <!-- HEADER -->
+        <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+                <div class="flex items-center space-x-3">
+                    <div class="bg-indigo-600 p-2 rounded-lg text-white shadow-lg shadow-indigo-500/30">
+                        <i class="fa-solid fa-cubes text-xl animate-pulse"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight text-white">PrimetechHub 3D</h1>
+                        <p class="text-xs text-indigo-400 font-medium">Controle Inteligente de Estoque & Qualidade</p>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-3">
+                    <!-- Botões de Backup -->
+                    <button onclick="exportarDados()" class="px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition duration-200 flex items-center gap-1.5 border border-slate-700">
+                        <i class="fa-solid fa-file-export"></i> Exportar Dados
+                    </button>
+                    <label class="cursor-pointer px-3 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition duration-200 flex items-center gap-1.5 border border-slate-700">
+                        <i class="fa-solid fa-file-import"></i> Importar Dados
+                        <input type="file" id="importFile" onchange="importarDados(event)" class="hidden">
+                    </label>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAIN CONTENT CONTAINER -->
+        <main class="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+            
+            <!-- SEÇÃO DE METRICS / HIGHLIGHTS -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-5 mb-8">
+                <!-- Total de Rolos -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">Total de Rolos</p>
+                        <h3 class="text-3xl font-extrabold text-white mt-1" id="stat-total-spools">0</h3>
+                    </div>
+                    <div class="bg-indigo-500/10 p-3.5 rounded-xl text-indigo-400">
+                        <i class="fa-solid fa-box-open text-2xl"></i>
+                    </div>
+                </div>
+
+                <!-- Peso Total Disponível -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">Peso Útil Disponível</p>
+                        <h3 class="text-3xl font-extrabold text-emerald-400 mt-1" id="stat-total-weight">0.0 kg</h3>
+                    </div>
+                    <div class="bg-emerald-500/10 p-3.5 rounded-xl text-emerald-400">
+                        <i class="fa-solid fa-weight-hanging text-2xl"></i>
+                    </div>
+                </div>
+
+                <!-- Estoque Crítico (< 150g) -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">Estoque Crítico</p>
+                        <h3 class="text-3xl font-extrabold text-rose-500 mt-1" id="stat-low-stock">0</h3>
+                    </div>
+                    <div class="bg-rose-500/10 p-3.5 rounded-xl text-rose-400">
+                        <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                    </div>
+                </div>
+
+                <!-- Investimento Ativo -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between shadow-sm">
+                    <div>
+                        <p class="text-slate-400 text-sm font-medium">Investimento em Uso</p>
+                        <h3 class="text-3xl font-extrabold text-amber-500 mt-1" id="stat-total-value">R$ 0,00</h3>
+                    </div>
+                    <div class="bg-amber-500/10 p-3.5 rounded-xl text-amber-400">
+                        <i class="fa-solid fa-coins text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- BOTÃO REGISTRAR PROJETO (DESTAQUE) -->
+            <div class="bg-gradient-to-r from-slate-900 to-indigo-950/40 border border-indigo-900/60 rounded-3xl p-6 mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="bg-indigo-500 text-white p-4 rounded-2xl shadow-xl shadow-indigo-600/30">
+                        <i class="fa-solid fa-cubes-stacked text-3xl"></i>
+                    </div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">Criador de Projetos Multicomponentes</h2>
+                        <p class="text-sm text-slate-400 mt-0.5">Registre impressões usando múltiplos filamentos, cronometre o tempo de máquina e calcule o custo real.</p>
+                    </div>
+                </div>
+                <button onclick="abrirModalProjeto()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-base py-3 px-6 rounded-2xl shadow-lg shadow-indigo-600/30 hover:scale-105 transition duration-200 flex items-center gap-2">
+                    <i class="fa-solid fa-circle-plus text-lg"></i> Novo Projeto 3D
+                </button>
+            </div>
+
+            <!-- SISTEMA DE ABAS -->
+            <div class="border-b border-slate-800 flex flex-wrap gap-2 mb-8">
+                <button onclick="switchTab('tab-stock')" id="btn-tab-stock" class="tab-btn px-5 py-3 text-sm font-bold border-b-2 border-indigo-500 text-indigo-400 transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-layer-group"></i> Estoque Ativo & Cadastro
+                </button>
+                <button onclick="switchTab('tab-purchases')" id="btn-tab-purchases" class="tab-btn px-5 py-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-receipt"></i> Histórico de Compras & Finanças
+                </button>
+                <button onclick="switchTab('tab-prints')" id="btn-tab-prints" class="tab-btn px-5 py-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i> Projetos Realizados & Desempenho
+                </button>
+            </div>
+
+            <!-- CONTEÚDO DAS ABAS -->
+
+            <!-- ABA 1: ESTOQUE E CADASTRO -->
+            <div id="tab-stock" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- COLUNA ESQUERDA: FORMULÁRIO DE CADASTRO / EDIÇÃO -->
+                <div class="lg:col-span-1">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sticky top-24 shadow-xl">
+                        <div class="flex items-center justify-between mb-5">
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2" id="form-title">
+                                <i class="fa-solid fa-circle-plus text-indigo-500"></i> Cadastrar Filamento
+                            </h2>
+                            <button id="cancel-edit-btn" onclick="limparFormulario()" class="hidden text-xs text-rose-400 hover:underline">
+                                Cancelar Edição
+                            </button>
+                        </div>
+
+                        <form id="filament-form" onsubmit="salvarFilamento(event)" class="space-y-4">
+                            <input type="hidden" id="edit-id" value="">
+                            
+                            <!-- Marca / Fabricante -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Marca / Fabricante</label>
+                                <select id="brand-select" onchange="toggleCustomBrand()" required class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2 text-sm text-white transition outline-none">
+                                    <!-- Carregado via JS -->
+                                </select>
+                                <input type="text" id="brand-custom" placeholder="Escreva o nome da nova marca..." class="hidden mt-2 w-full bg-slate-950 border border-indigo-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition outline-none">
+                            </div>
+
+                            <!-- Material e Variação -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Material Base</label>
+                                    <select id="material" required onchange="mostrarDicasMaterial()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2 text-sm text-white transition outline-none">
+                                        <option value="PLA">PLA</option>
+                                        <option value="PETG">PETG</option>
+                                        <option value="ABS">ABS</option>
+                                        <option value="TPU">TPU (Flex)</option>
+                                        <option value="Nylon">Nylon</option>
+                                        <option value="PVA">PVA</option>
+                                        <option value="Outro">Outro</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Variação/Tipo</label>
+                                    <select id="variation" required onchange="toggleCustomVariation()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2 text-sm text-white transition outline-none">
+                                        <!-- Carregado via JS para permitir novas variações -->
+                                    </select>
+                                    <input type="text" id="variation-custom" placeholder="Escreva a nova variação..." class="hidden mt-2 w-full bg-slate-950 border border-indigo-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition outline-none">
+                                </div>
+                            </div>
+
+                            <!-- Cor e Código Hex -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Nome da Cor</label>
+                                    <input type="text" id="color-name" required placeholder="Ex: Vermelho Silk" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Cor Visual</label>
+                                    <div class="flex items-center gap-2 bg-slate-950 border border-slate-800 p-1.5 rounded-lg h-[38px]">
+                                        <input type="color" id="color-hex" value="#4f46e5" class="w-8 h-6 rounded border-0 cursor-pointer bg-transparent">
+                                        <span class="text-[10px] text-slate-400">Escolha a cor</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dicas Dinâmicas do Material Selecionado (Ficha Técnica Avançada) -->
+                            <div id="material-specs-preview" class="bg-slate-950 border border-indigo-950/60 p-4 rounded-xl space-y-2.5 text-xs">
+                                <div class="flex items-center justify-between text-indigo-400 font-bold border-b border-slate-800 pb-1.5">
+                                    <span><i class="fa-solid fa-microchip"></i> Ficha Técnica (<span id="preview-material-name">PLA</span> + <span id="preview-variation-name">Normal</span>)</span>
+                                </div>
+                                <div class="flex gap-2 items-start text-slate-300">
+                                    <i class="fa-solid fa-droplet text-cyan-400 w-4 text-center mt-0.5"></i>
+                                    <div>
+                                        <span class="font-bold text-slate-400">Umidade Ideal:</span> 
+                                        <span id="preview-humidity">-</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 items-start text-slate-300">
+                                    <i class="fa-solid fa-fire text-amber-500 w-4 text-center mt-0.5"></i>
+                                    <div>
+                                        <span class="font-bold text-slate-400">Resistência Térmica:</span> 
+                                        <span id="preview-thermal">-</span>
+                                    </div>
+                                </div>
+                                <div class="flex gap-2 items-start text-slate-300">
+                                    <i class="fa-solid fa-temperature-half text-emerald-400 w-4 text-center mt-0.5"></i>
+                                    <div>
+                                        <span class="font-bold text-slate-400">Temperaturas Recomendadas:</span> 
+                                        <span id="preview-temps">-</span>
+                                    </div>
+                                </div>
+                                <!-- Alerta/Dica de Variação Adicional -->
+                                <div id="preview-extra-box" class="hidden bg-indigo-950/40 border border-indigo-900 p-2 rounded-lg text-[11px] text-indigo-300 flex items-start gap-1.5 mt-2">
+                                    <span id="preview-extra-content"></span>
+                                </div>
+                            </div>
+
+                            <!-- Pesos -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Peso Inicial (g)</label>
+                                    <input type="number" id="total-weight" required min="1" placeholder="Ex: 1000" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Peso Atual (g)</label>
+                                    <input type="number" id="current-weight" required min="0" placeholder="Ex: 1000" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                </div>
+                            </div>
+
+                            <!-- Preço e Fornecedor -->
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Preço Pago (R$)</label>
+                                    <input type="number" step="0.01" id="price" required placeholder="Ex: 120.00" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Fornecedor / Loja</label>
+                                    <input type="text" id="supplier" placeholder="Ex: Prime3D" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                </div>
+                            </div>
+
+                            <!-- Observações -->
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Observações (Opcional)</label>
+                                <textarea id="notes" rows="2" placeholder="Notas de fatiamento ou cuidados adicionais..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none resize-none"></textarea>
+                            </div>
+
+                            <!-- Botão Salvar -->
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-2.5 px-4 rounded-lg shadow-lg shadow-indigo-600/20 transition duration-200">
+                                <span id="submit-btn-text">Cadastrar no Estoque</span>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- COLUNA DIREITA: FILTROS E LISTA DE CARTÕES / TABELA -->
+                <div class="lg:col-span-2 space-y-6">
+                    <!-- Barra de Busca e Filtros Rápidos -->
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                        <div class="relative w-full sm:w-64">
+                            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-sm"></i>
+                            <input type="text" id="search-input" oninput="filtrarLista()" placeholder="Buscar cor ou marca..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl pl-9 pr-4 py-2 text-sm text-white transition outline-none">
+                        </div>
+                        
+                        <div class="flex gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 items-center">
+                            <button onclick="filtrarMaterialEstoque('TODOS')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg transition shrink-0" data-material="TODOS">Todos</button>
+                            <button onclick="filtrarMaterialEstoque('PLA')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0" data-material="PLA">PLA</button>
+                            <button onclick="filtrarMaterialEstoque('PETG')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0" data-material="PETG">PETG</button>
+                            <button onclick="filtrarMaterialEstoque('ABS')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0" data-material="ABS">ABS</button>
+                            <button onclick="filtrarMaterialEstoque('TPU')" class="mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0" data-material="TPU">TPU</button>
+                            
+                            <!-- SELETOR DE MODO DE VISUALIZAÇÃO -->
+                            <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1 ml-2 shrink-0">
+                                <button type="button" onclick="changeStockView('grid')" id="btn-view-grid" class="p-1 rounded-md text-indigo-400 bg-slate-900 transition" title="Visualização em Grade/Cartões">
+                                    <i class="fa-solid fa-grip"></i>
+                                </button>
+                                <button type="button" onclick="changeStockView('table')" id="btn-view-table" class="p-1 rounded-md text-slate-400 hover:text-white transition" title="Visualização em Tabela">
+                                    <i class="fa-solid fa-table-list"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Lista de Cartões de Filamento (OU TABELA) -->
+                    <div id="filaments-container">
+                        <!-- Conteúdo injetado via JS de acordo com a seleção de grid ou tabela -->
+                    </div>
+
+                    <!-- Estado vazio -->
+                    <div id="empty-state" class="hidden text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl">
+                        <div class="text-slate-500 text-5xl mb-4">
+                            <i class="fa-solid fa-folder-open animate-bounce"></i>
+                        </div>
+                        <h4 class="text-white font-bold text-lg">Sem filamentos disponíveis</h4>
+                        <p class="text-slate-400 text-sm mt-1">Crie um novo rolo no painel lateral de cadastro para começar.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 2: HISTÓRICO DE COMPRAS -->
+            <div id="tab-purchases" class="tab-content hidden space-y-6">
+                <!-- Filtros Avançados de Compra -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <h3 class="text-white font-bold text-base mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-filter text-indigo-500"></i> Filtrar Compras & Gastos
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                        <!-- Filtro Marca -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Fabricante</label>
+                            <select id="filter-purchase-brand" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-sm text-white outline-none">
+                                <option value="TODOS">Todos</option>
+                            </select>
+                        </div>
+                        <!-- Filtro Material -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Material</label>
+                            <select id="filter-purchase-material" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-sm text-white outline-none">
+                                <option value="TODOS">Todos</option>
+                                <option value="PLA">PLA</option>
+                                <option value="PETG">PETG</option>
+                                <option value="ABS">ABS</option>
+                                <option value="TPU">TPU</option>
+                                <option value="Nylon">Nylon</option>
+                                <option value="PVA">PVA</option>
+                                <option value="Outro">Outro</option>
+                            </select>
+                        </div>
+                        <!-- Filtro Variação -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Variação</label>
+                            <select id="filter-purchase-variation" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2 py-2 text-sm text-white outline-none">
+                                <option value="TODOS">Todas</option>
+                                <!-- Injetado via JS -->
+                            </select>
+                        </div>
+                        <!-- Filtro Data De -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Data Inicial</label>
+                            <input type="date" id="filter-purchase-date-start" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-white outline-none">
+                        </div>
+                        <!-- Filtro Data Até -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Data Final</label>
+                            <input type="date" id="filter-purchase-date-end" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1.5 text-sm text-white outline-none">
+                        </div>
+                    </div>
+
+                    <!-- Painel Financeiro dentro da filtragem -->
+                    <div class="mt-6 pt-5 border-t border-slate-800 flex flex-wrap gap-5 items-center justify-between">
+                        <div>
+                            <p class="text-xs text-slate-400 font-medium uppercase tracking-wider">Investimento Total nos Itens Filtrados</p>
+                            <h2 class="text-2xl font-black text-indigo-400 mt-0.5" id="total-filtered-spending">R$ 0,00</h2>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="limparFiltrosCompra()" class="px-3 py-1.5 text-xs font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition">
+                                Limpar Filtros
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabela de Compras -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    <th class="pb-3 pl-4">Filamento</th>
+                                    <th class="pb-3">Fabricante</th>
+                                    <th class="pb-3">Fornecedor</th>
+                                    <th class="pb-3">Data de Compra</th>
+                                    <th class="pb-3">Estoque Inicial</th>
+                                    <th class="pb-3 text-right pr-4">Preço Pago</th>
+                                </tr>
+                            </thead>
+                            <tbody id="purchases-tbody" class="divide-y divide-slate-800 text-sm">
+                                <!-- Carregado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="empty-purchases-state" class="hidden text-center py-12 text-slate-500 text-sm">
+                        Nenhuma compra atende aos filtros definidos.
+                    </div>
+                </div>
+            </div>
+
+            <!-- ABA 3: IMPRESSÕES E CONFIABILIDADE -->
+            <div id="tab-prints" class="tab-content hidden space-y-6">
+                <!-- Painel de Confiabilidade de Impressão -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Taxa de Sucesso Geral</p>
+                            <h3 class="text-2xl font-extrabold text-emerald-400 mt-1" id="stat-print-success-rate">0.0%</h3>
+                        </div>
+                        <div class="bg-emerald-500/10 p-3 rounded-lg text-emerald-400 text-xl">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Total de Projetos Gravados</p>
+                            <h3 class="text-2xl font-extrabold text-white mt-1" id="stat-total-prints">0</h3>
+                        </div>
+                        <div class="bg-indigo-500/10 p-3 rounded-lg text-indigo-400 text-xl">
+                            <i class="fa-solid fa-print"></i>
+                        </div>
+                    </div>
+                    <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 flex items-center justify-between">
+                        <div>
+                            <p class="text-slate-400 text-xs font-medium uppercase tracking-wider">Problema Mais Recorrente</p>
+                            <h3 class="text-lg font-extrabold text-rose-400 mt-1 truncate max-w-[200px]" id="stat-main-failure-reason">Nenhum</h3>
+                        </div>
+                        <div class="bg-rose-500/10 p-3 rounded-lg text-rose-400 text-xl">
+                            <i class="fa-solid fa-bug"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Lista de Impressões -->
+                <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-lg font-bold text-white flex items-center gap-2">
+                                <i class="fa-solid fa-chart-line text-indigo-500"></i> Histórico de Consumo & Logs de Projetos
+                            </h2>
+                            <p class="text-xs text-slate-400 mt-0.5">Diagnósticos, detalhamento de custos, tempo de execução e materiais associados por projeto</p>
+                        </div>
+                        <button onclick="limparHistorico()" class="text-xs text-rose-400 hover:underline flex items-center gap-1.5 font-semibold">
+                            <i class="fa-solid fa-trash-can"></i> Limpar Histórico de Consumo
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-xs font-semibold uppercase tracking-wider text-slate-400">
+                                    <th class="pb-3 pl-4">Projeto / Descrição</th>
+                                    <th class="pb-3">Data & Tempo</th>
+                                    <th class="pb-3">Materiais Consumidos</th>
+                                    <th class="pb-3">Custos Extras</th>
+                                    <th class="pb-3">Status / Avaliação</th>
+                                    <th class="pb-3">Custo Total</th>
+                                    <th class="pb-3 text-right pr-4">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody" class="divide-y divide-slate-800 text-sm">
+                                <!-- Carregado via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="empty-history-state" class="hidden text-center py-12 text-slate-500 text-sm">
+                        Nenhum projeto foi registrado até o momento.
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- FOOTER -->
+        <footer class="border-t border-slate-900 bg-slate-950 py-8 text-center mt-12">
+            <p class="text-xs text-slate-500">PrimetechHub 3D - Gestão Inteligente para Fabricantes e Makers. Todos os dados são processados e armazenados localmente.</p>
+        </footer>
+    </div>
+
+
+    <!-- MODAL DE NOVO PROJETO (MULTICOMPONENTES & DINÂMICO) -->
+    <div id="project-modal" class="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 hidden overflow-y-auto">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-2xl p-6 relative shadow-2xl my-8">
+            <button onclick="fecharModalProjeto()" class="absolute right-4 top-4 text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            
+            <h3 class="text-lg font-bold text-white mb-1 flex items-center gap-2" id="project-modal-title">
+                <i class="fa-solid fa-square-plus text-indigo-500"></i> Registrar Novo Projeto 3D
+            </h3>
+            <p class="text-xs text-slate-400 mb-4 pb-2 border-b border-slate-800">Combine filamentos, adicione acessórios, o tempo gasto e registre notas sobre a qualidade final.</p>
+            
+            <form onsubmit="confirmarProjeto(event)" class="space-y-5">
+                <!-- ID invisível para edição de projeto -->
+                <input type="hidden" id="proj-edit-id" value="">
+                
+                <!-- Nome do projeto e Descrição -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Nome do Projeto / Peça</label>
+                        <input type="text" id="proj-name" required placeholder="Ex: Estação de Carga, Suporte Articulado" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Descrição / Notas do Processo</label>
+                        <input type="text" id="proj-notes" placeholder="Ex: Velocidade 60mm/s, fatiado no Cura" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
+                    </div>
+                </div>
+
+                <!-- TEMPO DE EXECUÇÃO -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Horas de Impressão (Tempo)</label>
+                        <input type="number" id="proj-time-hours" min="0" placeholder="Ex: 8" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Minutos de Impressão</label>
+                        <input type="number" id="proj-time-minutes" min="0" max="59" placeholder="Ex: 45" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
+                    </div>
+                </div>
+
+                <!-- SEÇÃO: FILAMENTOS USADOS (DINÂMICO) -->
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-fill-drip"></i> Filamentos Utilizados
+                        </span>
+                        <button type="button" onclick="adicionarLinhaFilamento()" class="text-xs bg-indigo-600/10 hover:bg-indigo-600/20 text-indigo-400 font-bold py-1 px-3 rounded-lg border border-indigo-900/40 flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-[10px]"></i> Adicionar Filamento
+                        </button>
+                    </div>
+
+                    <div id="proj-filaments-container" class="space-y-2.5 max-h-[160px] overflow-y-auto pr-1">
+                        <!-- Injetado dinamicamente via JS -->
+                    </div>
+                </div>
+
+                <!-- SEÇÃO: OUTROS CUSTOS / COMPONENTES (DINÂMICO) -->
+                <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/60 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-screwdriver-wrench"></i> Outros Custos / Acessórios
+                        </span>
+                        <button type="button" onclick="adicionarLinhaExtra()" class="text-xs bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 font-bold py-1 px-3 rounded-lg border border-emerald-900/40 flex items-center gap-1">
+                            <i class="fa-solid fa-plus text-[10px]"></i> Adicionar Acessório
+                        </button>
+                    </div>
+
+                    <div id="proj-extras-container" class="space-y-2.5 max-h-[130px] overflow-y-auto pr-1">
+                        <!-- Injetado dinamicamente via JS -->
+                    </div>
+                </div>
+
+                <!-- STATUS E AVALIAÇÃO -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-800/50">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Resultado do Projeto</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="cursor-pointer flex items-center justify-center gap-2 bg-slate-950 border border-slate-800 p-2 rounded-lg text-xs text-slate-300 font-semibold hover:border-emerald-500 transition">
+                                <input type="radio" name="proj-status" value="sucesso" checked onchange="toggleProjStatusFields()" class="accent-emerald-500">
+                                <span class="text-emerald-400 flex items-center gap-1"><i class="fa-solid fa-circle-check"></i> Sucesso</span>
+                            </label>
+                            <label class="cursor-pointer flex items-center justify-center gap-2 bg-slate-950 border border-slate-800 p-2 rounded-lg text-xs text-slate-300 font-semibold hover:border-rose-500 transition">
+                                <input type="radio" name="proj-status" value="falha" onchange="toggleProjStatusFields()" class="accent-rose-500">
+                                <span class="text-rose-400 flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation"></i> Falha</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        <!-- Campo Dinâmico de Sucesso -->
+                        <div id="proj-status-success" class="space-y-1.5">
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Qualidade Visual</label>
+                            <div class="flex items-center gap-1.5 bg-slate-950 px-3 py-1.5 rounded-lg border border-slate-800 justify-center">
+                                <button type="button" onclick="setProjRating(1)" class="proj-star-btn text-xl text-amber-500 hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setProjRating(2)" class="proj-star-btn text-xl text-amber-500 hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setProjRating(3)" class="proj-star-btn text-xl text-amber-500 hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setProjRating(4)" class="proj-star-btn text-xl text-amber-500 hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="setProjRating(5)" class="proj-star-btn text-xl text-amber-500 hover:scale-110 transition"><i class="fa-solid fa-star"></i></button>
+                                <input type="hidden" id="proj-rating" value="5">
+                            </div>
+                        </div>
+
+                        <!-- Campo Dinâmico de Falha -->
+                        <div id="proj-status-fail" class="space-y-1.5 hidden">
+                            <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Tipo de Falha</label>
+                            <select id="proj-failure-reason" class="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 focus:ring-1 focus:ring-rose-500 rounded-lg px-2.5 py-1.5 text-xs text-white outline-none">
+                                <option value="Descolamento da Mesa (Warping)">Descolamento da Mesa (Warping)</option>
+                                <option value="Sub-extrusão (Falta de material)">Sub-extrusão (Falta de material)</option>
+                                <option value="Fiapos/Fios Excessivos (Stringing)">Fiapos/Fios Excessivos (Stringing)</option>
+                                <option value="Entupimento de Bico (Clog)">Entupimento de Bico (Clog)</option>
+                                <option value="Deslocamento de Camada (Layer Shift)">Deslocamento de Camada (Layer Shift)</option>
+                                <option value="Superaquecimento / Refrigeração">Superaquecimento / Refrigeração</option>
+                                <option value="Fim de Rolo Inesperado">Fim de Rolo Inesperado</option>
+                                <option value="Quebra de Filamento">Quebra de Filamento (Ressecamento)</option>
+                                <option value="Outro Motivo">Outro Motivo</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RESUMO FINANCEIRO TOTALIZADO -->
+                <div class="bg-indigo-950/20 border border-indigo-900/40 rounded-xl p-4 flex flex-wrap gap-4 items-center justify-between text-xs font-bold text-slate-300">
+                    <div class="space-y-1">
+                        <div>Filamentos: <span class="text-white font-extrabold" id="sum-filaments-cost">R$ 0,00</span></div>
+                        <div>Acessórios Extras: <span class="text-white font-extrabold" id="sum-extras-cost">R$ 0,00</span></div>
+                    </div>
+                    <div class="text-right">
+                        <span class="block text-slate-400 text-[10px] uppercase tracking-wider">Custo Total de Produção</span>
+                        <span class="text-xl font-black text-emerald-400" id="sum-grand-total">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <!-- Botões de ação -->
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="fecharModalProjeto()" class="flex-1 py-2.5 px-4 text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg">
+                        Cancelar
+                    </button>
+                    <button type="submit" class="flex-1 py-2.5 px-4 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg shadow-lg shadow-indigo-600/10" id="project-submit-btn">
+                        Deduzir e Criar Projeto
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <!-- JAVASCRIPT PRINCIPAL -->
+    <script>
+        // Dados de inicialização padrão (Mock) caso o usuário não tenha nada cadastrado ainda
+        const initialMockData = [
+            { id: 1, brand: "eSUN", material: "PLA", variation: "Silk", colorName: "Ouro Radiante", colorHex: "#d97706", price: 139.90, totalWeight: 1000, currentWeight: 850, supplier: "Prime3D", date: "2026-05-12", notes: "Excelente brilho e acabamento" },
+            { id: 2, brand: "3D Prime", material: "PETG", variation: "Normal", colorName: "Preto Opaco", colorHex: "#1e293b", price: 125.00, totalWeight: 1000, currentWeight: 140, supplier: "Mercado Livre", date: "2026-04-18", notes: "Aderência excelente na mesa com cola bastão" },
+            { id: 3, brand: "GTMax", material: "ABS", variation: "Plus", colorName: "Vermelho Mecânico", colorHex: "#dc2626", price: 119.00, totalWeight: 1000, currentWeight: 600, supplier: "GTMax 3D", date: "2026-06-02", notes: "Necessário enclausurar impressora para evitar warp" },
+            { id: 4, brand: "Slicex", material: "TPU", variation: "Normal", colorName: "Azul Cristal", colorHex: "#06b6d4", price: 159.90, totalWeight: 500, currentWeight: 450, supplier: "Amazon", date: "2026-06-15", notes: "Sem retração para evitar encavalamento" }
+        ];
+
+        const initialMockHistory = [
+            { 
+                id: 101, 
+                pieceName: "Vaso Geométrico", 
+                notes: "Fatiado com bico 0.4, acabamento impecável.", 
+                date: "2026-06-01T10:30:00.000Z", 
+                status: "sucesso", 
+                rating: 5, 
+                failureReason: "", 
+                durationHours: 4,
+                durationMinutes: 15,
+                filamentsUsed: [
+                    { filamentId: 1, brand: "eSUN", material: "PLA", variation: "Silk", colorName: "Ouro Radiante", colorHex: "#d97706", weightUsed: 120, cost: 16.78 }
+                ],
+                extraCosts: [],
+                totalFilamentCost: 16.78,
+                totalExtraCost: 0.00,
+                grandTotalCost: 16.78
+            },
+            { 
+                id: 102, 
+                pieceName: "Suporte Articulado Gopro", 
+                notes: "Mesa estava fria e sem adesivo.", 
+                date: "2026-06-03T14:20:00.000Z", 
+                status: "falha", 
+                rating: 0, 
+                failureReason: "Descolamento da Mesa (Warping)", 
+                durationHours: 2,
+                durationMinutes: 0,
+                filamentsUsed: [
+                    { filamentId: 2, brand: "3D Prime", material: "PETG", variation: "Normal", colorName: "Preto Opaco", colorHex: "#1e293b", weightUsed: 65, cost: 8.12 }
+                ],
+                extraCosts: [
+                    { name: "Imã Neodímio", cost: 4.50 }
+                ],
+                totalFilamentCost: 8.12,
+                totalExtraCost: 4.50,
+                grandTotalCost: 12.62
+            }
+        ];
+
+        // Dicionário de fichas técnicas cruzadas de materiais
+        const materialSpecs = {
+            'PLA': {
+                humidity: 'Baixa sensibilidade (< 50% UR). Secar a 45°C por 4h se houver fiapos.',
+                thermal: 'Baixa resistência térmica (amolece em ~50-55°C). Indicado para uso interno e estético.',
+                bedTemp: 'Mesa: 50-60°C | Bico: 190-220°C'
+            },
+            'PETG': {
+                humidity: 'Sensibilidade moderada (< 30% UR). Secar a 65°C por 4-6h para evitar fiapos.',
+                thermal: 'Resistência térmica média (suporta até ~75-80°C). Peças de uso mecânico leve.',
+                bedTemp: 'Mesa: 70-80°C | Bico: 230-255°C'
+            },
+            'ABS': {
+                humidity: 'Sensibilidade moderada (< 35% UR). Secar a 70-80°C por 4h para prevenir bolhas.',
+                thermal: 'Alta resistência térmica (suporta até ~95-100°C). Excelente usabilidade mecânica.',
+                bedTemp: 'Mesa: 100-110°C | Bico: 240-265°C'
+            },
+            'TPU': {
+                humidity: 'Altíssima sensibilidade (< 15% UR). Secar a 50-55°C por 4-6h.',
+                thermal: 'Excelente absorção de impacto. Mantém flexibilidade mecânica a frio.',
+                bedTemp: 'Mesa: 0-50°C | Bico: 210-235°C'
+            },
+            'Nylon': {
+                humidity: 'Sensibilidade extrema (< 10% UR). Absorve umidade em poucas horas. Secar a 75-80°C por 6-8h.',
+                thermal: 'Elevada resistência térmica (suporta até ~110-120°C). Extrema tenacidade e desgaste.',
+                bedTemp: 'Mesa: 80-100°C | Bico: 245-275°C'
+            },
+            'PVA': {
+                humidity: 'Altamente crítica (< 10% UR). Solúvel em água. Guardar sempre selado.',
+                thermal: 'Material de suporte de fusão rápida. Suporta temperatura de bico de até 210°C.',
+                bedTemp: 'Mesa: 50-60°C | Bico: 190-210°C'
+            },
+            'Outro': {
+                humidity: 'Variável. Consulte as especificações fornecidas pelo fabricante do filamento.',
+                thermal: 'Depende da base química do polímero. Testes térmicos preliminares recomendados.',
+                bedTemp: 'Mesa: Conforme o rolo | Bico: Conforme o rolo'
+            }
+        };
+
+        const variationSpecs = {
+            'Normal': '',
+            'Silk': '✨ <strong>Dica de Silk (Seda):</strong> Para brilho máximo, reduza a velocidade de impressão das paredes externas (~30-40 mm/s) e suba a temperatura do bico em 5-10°C.',
+            'Plus': '💪 <strong>Dica de Plus / Pro:</strong> Formulação melhorada contra impactos e melhor fluidez.',
+            'CF': '⚠️ <strong>Dica de CF (Fibra de Carbono):</strong> REQUER bico de aço endurecido (mínimo 0.4mm) devido ao caráter altamente abrasivo das fibras.',
+            'Matte': '🎨 <strong>Dica de Matte (Fosco):</strong> Acabamento sem brilho que esconde imperfeições de camada de forma excelente.',
+            'Wood': '🪵 <strong>Dica de Wood (Madeira):</strong> Recomenda-se bico de 0.5mm ou maior para evitar entupimento por micropartículas de madeira.'
+        };
+
+        let filaments = [];
+        let printHistory = [];
+        let brands = [];
+        let variations = [];
+        
+        let currentStockFilterMaterial = 'TODOS';
+        let stockViewMode = 'grid'; // 'grid' ou 'table'
+
+        // Inicialização na abertura da página
+        window.addEventListener('load', () => {
+            // Inicializando Média de Visualização
+            if (localStorage.getItem('stock_view_mode')) {
+                stockViewMode = localStorage.getItem('stock_view_mode');
+            }
+            changeStockViewBtnClass();
+
+            // Inicializando Banco de Fabricantes
+            if (localStorage.getItem('brands_db')) {
+                brands = JSON.parse(localStorage.getItem('brands_db'));
+            } else {
+                brands = ['eSUN', '3D Prime', 'GTMax', 'Slicex', 'Voolt3D', 'Creality', 'Hatchbox'];
+                localStorage.setItem('brands_db', JSON.stringify(brands));
+            }
+
+            // Inicializando Banco de Variações
+            if (localStorage.getItem('variations_db')) {
+                variations = JSON.parse(localStorage.getItem('variations_db'));
+            } else {
+                variations = ['Normal', 'Silk', 'Plus', 'CF', 'Matte', 'Wood'];
+                localStorage.setItem('variations_db', JSON.stringify(variations));
+            }
+
+            // Inicializando Filamentos
+            if (localStorage.getItem('filament_db')) {
+                filaments = JSON.parse(localStorage.getItem('filament_db'));
+            } else {
+                filaments = initialMockData;
+                localStorage.setItem('filament_db', JSON.stringify(filaments));
+            }
+
+            // Inicializando Histórico de Impressão
+            if (localStorage.getItem('print_history_db')) {
+                printHistory = JSON.parse(localStorage.getItem('print_history_db'));
+            } else {
+                printHistory = initialMockHistory;
+                localStorage.setItem('print_history_db', JSON.stringify(printHistory));
+            }
+
+            popularSelectMarcas();
+            popularSelectVariacoes();
+            mostrarDicasMaterial();
+            atualizarPainel();
+            popularFiltrosCompra();
+        });
+
+        // Apresentar Notificações Modernas (Toasts)
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-900 border-indigo-500 text-indigo-400';
+            let icon = '<i class="fa-solid fa-circle-check"></i>';
+            
+            if (type === 'error') {
+                bgClass = 'bg-slate-900 border-rose-500 text-rose-500';
+                icon = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else if (type === 'warning') {
+                bgClass = 'bg-slate-900 border-amber-500 text-amber-500';
+                icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+
+            toast.className = `flex items-center gap-3 p-4 rounded-xl border ${bgClass} shadow-2xl transition duration-300 transform translate-y-2 pointer-events-auto max-w-sm`;
+            toast.innerHTML = `
+                <div class="text-lg">${icon}</div>
+                <div class="text-xs font-bold">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // CONTROLAR SISTEMA DE ABAS
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-5 py-3 text-sm font-bold border-b-2 border-transparent text-slate-400 hover:text-white transition-all flex items-center gap-2";
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn px-5 py-3 text-sm font-bold border-b-2 border-indigo-500 text-indigo-400 transition-all flex items-center gap-2";
+            }
+
+            if (tabId === 'tab-purchases') {
+                popularFiltrosCompra();
+                renderizarHistoricoCompras();
+            } else if (tabId === 'tab-prints') {
+                renderizarHistoricoPrints();
+                atualizarMetricasConfiabilidade();
+            }
+        }
+
+        // POPULAR SELEÇÃO DE MARCAS NO CADASTRO
+        function popularSelectMarcas() {
+            const select = document.getElementById('brand-select');
+            select.innerHTML = '';
+            
+            brands.sort().forEach(brand => {
+                const opt = document.createElement('option');
+                opt.value = brand;
+                opt.textContent = brand;
+                select.appendChild(opt);
+            });
+
+            const optOutro = document.createElement('option');
+            optOutro.value = "_outro_";
+            optOutro.textContent = "+ Outro (Adicionar Novo...)";
+            select.appendChild(optOutro);
+
+            toggleCustomBrand();
+        }
+
+        function toggleCustomBrand() {
+            const select = document.getElementById('brand-select');
+            const customInput = document.getElementById('brand-custom');
+            
+            if (select.value === '_outro_') {
+                customInput.classList.remove('hidden');
+                customInput.required = true;
+            } else {
+                customInput.classList.add('hidden');
+                customInput.required = false;
+            }
+        }
+
+        // POPULAR SELEÇÃO DE VARIAÇÕES NO CADASTRO
+        function popularSelectVariacoes() {
+            const select = document.getElementById('variation');
+            select.innerHTML = '';
+            
+            variations.sort().forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                select.appendChild(opt);
+            });
+
+            const optOutro = document.createElement('option');
+            optOutro.value = "_outro_";
+            optOutro.textContent = "+ Outra Variação...";
+            select.appendChild(optOutro);
+
+            toggleCustomVariation();
+        }
+
+        function toggleCustomVariation() {
+            const select = document.getElementById('variation');
+            const customInput = document.getElementById('variation-custom');
+            
+            if (select.value === '_outro_') {
+                customInput.classList.remove('hidden');
+                customInput.required = true;
+            } else {
+                customInput.classList.add('hidden');
+                customInput.required = false;
+            }
+            mostrarDicasMaterial();
+        }
+
+        // POPULAR FILTROS DA ABA DE HISTÓRICO DE COMPRAS
+        function popularFiltrosCompra() {
+            const filterBrand = document.getElementById('filter-purchase-brand');
+            const currentBrandSelected = filterBrand.value || 'TODOS';
+            filterBrand.innerHTML = '<option value="TODOS">Todos</option>';
+            brands.sort().forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b;
+                opt.textContent = b;
+                filterBrand.appendChild(opt);
+            });
+            filterBrand.value = currentBrandSelected;
+
+            const filterVar = document.getElementById('filter-purchase-variation');
+            const currentVarSelected = filterVar.value || 'TODOS';
+            filterVar.innerHTML = '<option value="TODOS">Todas</option>';
+            variations.sort().forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v;
+                opt.textContent = v;
+                filterVar.appendChild(opt);
+            });
+            filterVar.value = currentVarSelected;
+        }
+
+        // MOSTRAR DICAS DE FICHA TÉCNICA
+        function mostrarDicasMaterial() {
+            const material = document.getElementById('material').value;
+            let variation = document.getElementById('variation').value;
+
+            if (variation === '_outro_') {
+                variation = document.getElementById('variation-custom').value.trim() || 'Customizada';
+            }
+
+            const spec = materialSpecs[material] || materialSpecs['Outro'];
+            const extraTip = variationSpecs[variation] || '';
+
+            document.getElementById('preview-material-name').textContent = material;
+            document.getElementById('preview-variation-name').textContent = variation;
+            document.getElementById('preview-humidity').textContent = spec.humidity;
+            document.getElementById('preview-thermal').textContent = spec.thermal;
+            document.getElementById('preview-temps').textContent = spec.bedTemp;
+
+            const extraBox = document.getElementById('preview-extra-box');
+            if (extraTip) {
+                extraBox.classList.remove('hidden');
+                document.getElementById('preview-extra-content').innerHTML = extraTip;
+            } else {
+                extraBox.classList.add('hidden');
+            }
+        }
+
+        // ALTERAR MODO DE VISUALIZAÇÃO DO ESTOQUE
+        function changeStockView(view) {
+            stockViewMode = view;
+            localStorage.setItem('stock_view_mode', view);
+            changeStockViewBtnClass();
+            renderizarListaFilamentos();
+        }
+
+        function changeStockViewBtnClass() {
+            const btnGrid = document.getElementById('btn-view-grid');
+            const btnTable = document.getElementById('btn-view-table');
+            
+            if (stockViewMode === 'grid') {
+                btnGrid.className = "p-1 rounded-md text-indigo-400 bg-slate-900 transition";
+                btnTable.className = "p-1 rounded-md text-slate-400 hover:text-white transition";
+            } else {
+                btnGrid.className = "p-1 rounded-md text-slate-400 hover:text-white transition";
+                btnTable.className = "p-1 rounded-md text-indigo-400 bg-slate-900 transition";
+            }
+        }
+
+        // ATUALIZAR MÉTRICAS GERAIS E PAINEL
+        function atualizarPainel() {
+            const activeSpools = filaments.filter(f => f.currentWeight > 0).length;
+            document.getElementById('stat-total-spools').textContent = activeSpools;
+
+            const totalGrams = filaments.reduce((acc, current) => acc + Number(current.currentWeight), 0);
+            document.getElementById('stat-total-weight').textContent = `${(totalGrams / 1000).toFixed(2)} kg`;
+
+            const lowStockCount = filaments.filter(f => f.currentWeight < 150 && f.currentWeight > 0).length;
+            document.getElementById('stat-low-stock').textContent = lowStockCount;
+
+            const activeValue = filaments.reduce((acc, f) => {
+                const ratio = Number(f.currentWeight) / Number(f.totalWeight);
+                return acc + (Number(f.price) * ratio);
+            }, 0);
+            document.getElementById('stat-total-value').textContent = `R$ ${activeValue.toFixed(2).replace('.', ',')}`;
+
+            renderizarListaFilamentos();
+        }
+
+        // RENDERIZAR LISTA DE ESTOQUE ATIVO (GRADE DE CARDS OU TABELA RESPONSIVA)
+        function renderizarListaFilamentos() {
+            const container = document.getElementById('filaments-container');
+            const emptyState = document.getElementById('empty-state');
+            const searchQuery = document.getElementById('search-input').value.toLowerCase();
+            
+            container.innerHTML = '';
+
+            const filtered = filaments.filter(f => {
+                const matchesSearch = f.brand.toLowerCase().includes(searchQuery) || f.colorName.toLowerCase().includes(searchQuery);
+                const matchesMaterial = currentStockFilterMaterial === 'TODOS' || f.material === currentStockFilterMaterial;
+                return matchesSearch && matchesMaterial;
+            });
+
+            if (filtered.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            // MODO DE VISUALIZAÇÃO: GRADE (CARTÕES)
+            if (stockViewMode === 'grid') {
+                const gridDiv = document.createElement('div');
+                gridDiv.className = "grid grid-cols-1 md:grid-cols-2 gap-4";
+                container.appendChild(gridDiv);
+
+                filtered.forEach(f => {
+                    const percentage = Math.round((f.currentWeight / f.totalWeight) * 100);
+                    let progressColor = 'bg-indigo-600';
+                    let alertBadge = '';
+                    
+                    if (f.currentWeight <= 0) {
+                        progressColor = 'bg-slate-800 border-slate-700';
+                        alertBadge = `<span class="bg-slate-950 text-slate-400 border border-slate-800 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Esgotado</span>`;
+                    } else if (f.currentWeight < 150) {
+                        progressColor = 'bg-rose-500 shadow-lg shadow-rose-500/20';
+                        alertBadge = `<span class="bg-rose-950/50 text-rose-400 border border-rose-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation animate-bounce"></i> Crítico</span>`;
+                    } else if (f.currentWeight < 350) {
+                        progressColor = 'bg-amber-500';
+                        alertBadge = `<span class="bg-amber-950/50 text-amber-400 border border-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Baixo</span>`;
+                    } else {
+                        progressColor = 'bg-emerald-500';
+                    }
+
+                    const valorRestante = ((f.price * f.currentWeight) / f.totalWeight).toFixed(2);
+                    const currentSpecs = materialSpecs[f.material] || materialSpecs['Outro'];
+                    const extraTip = variationSpecs[f.variation] || '';
+
+                    const cardHtml = `
+                        <div class="bg-slate-900 border ${f.currentWeight < 150 && f.currentWeight > 0 ? 'border-rose-900/40 bg-rose-950/5' : 'border-slate-800'} rounded-2xl p-5 hover:border-slate-700 transition duration-300 relative overflow-hidden flex flex-col justify-between">
+                            <div>
+                                <!-- Header do Card -->
+                                <div class="flex justify-between items-start mb-3">
+                                    <div class="flex items-center gap-2.5">
+                                        <span class="w-5 h-5 rounded-full border border-slate-700 shadow-inner block" style="background-color: ${f.colorHex}"></span>
+                                        <div>
+                                            <h4 class="font-bold text-white text-base leading-tight truncate max-w-[130px]" title="${f.colorName}">${f.colorName}</h4>
+                                            <p class="text-xs text-slate-400 font-semibold">${f.brand}</p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        ${alertBadge}
+                                        <span class="bg-slate-950 text-indigo-400 border border-indigo-900/40 text-[11px] font-black px-2 py-0.5 rounded-md">${f.material} ${f.variation}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Gráfico de Progresso de Peso -->
+                                <div class="mt-4">
+                                    <div class="flex justify-between text-xs font-semibold mb-1">
+                                        <span class="text-slate-300">${f.currentWeight}g <span class="text-slate-500 text-[10px]">restantes de ${f.totalWeight}g</span></span>
+                                        <span class="text-white">${percentage}%</span>
+                                    </div>
+                                    <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800/30">
+                                        <div class="h-full ${progressColor} rounded-full transition-all duration-500" style="width: ${percentage}%"></div>
+                                    </div>
+                                </div>
+
+                                <!-- Meta Informações extras -->
+                                <div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-slate-800/50 text-[11px] text-slate-400">
+                                    <div>
+                                        <span class="block text-slate-500 uppercase tracking-wide text-[9px] font-bold">Valor em Sobra</span>
+                                        <span class="font-bold text-slate-300">R$ ${valorRestante.replace('.', ',')}</span>
+                                    </div>
+                                    <div>
+                                        <span class="block text-slate-500 uppercase tracking-wide text-[9px] font-bold">Fornecedor</span>
+                                        <span class="font-bold text-slate-300 truncate block max-w-full" title="${f.supplier || 'N/A'}">${f.supplier || 'Não informado'}</span>
+                                    </div>
+                                </div>
+
+                                <!-- Sanfona técnica do material -->
+                                <details class="mt-3 bg-slate-950/40 rounded-xl border border-slate-800/40 overflow-hidden group">
+                                    <summary class="flex justify-between items-center px-3 py-2 text-xs font-semibold text-indigo-400 cursor-pointer hover:bg-slate-900/50 transition list-none select-none">
+                                        <span class="flex items-center gap-1.5"><i class="fa-solid fa-graduation-cap"></i> Parâmetros Técnicos</span>
+                                        <i class="fa-solid fa-chevron-down text-[10px] text-slate-500 group-open:rotate-180 transition-transform"></i>
+                                    </summary>
+                                    <div class="p-3 text-[11px] text-slate-300 space-y-2 border-t border-slate-850 bg-slate-950/80">
+                                        <div>
+                                            <strong class="text-slate-400 block mb-0.5">💧 Secagem / Umidade:</strong>
+                                            <span class="text-slate-300">${currentSpecs.humidity}</span>
+                                        </div>
+                                        <div>
+                                            <strong class="text-slate-400 block mb-0.5">🔥 Resistência Pós-Impressão:</strong>
+                                            <span class="text-slate-300">${currentSpecs.thermal}</span>
+                                        </div>
+                                        <div>
+                                            <strong class="text-slate-400 block mb-0.5">🌡️ Temperaturas Recomendadas:</strong>
+                                            <span class="text-slate-300">${currentSpecs.bedTemp}</span>
+                                        </div>
+                                        ${extraTip ? `
+                                        <div class="pt-1.5 border-t border-slate-800 text-[10.5px] text-indigo-300">
+                                            ${extraTip}
+                                        </div>
+                                        ` : ''}
+                                    </div>
+                                </details>
+
+                                ${f.notes ? `
+                                <div class="mt-3 bg-slate-950/30 p-2 rounded-lg text-[11px] text-slate-400 border border-slate-800/30 flex items-start gap-1.5">
+                                    <i class="fa-solid fa-sticky-note text-slate-600 mt-0.5"></i>
+                                    <span class="line-clamp-2 italic">${f.notes}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+
+                            <!-- Botões de Ação do Card -->
+                            <div class="flex items-center gap-2 mt-5 pt-3 border-t border-slate-800/50">
+                                <button onclick="prepararEdicao(${f.id})" class="flex-grow bg-slate-850 hover:bg-slate-800 text-slate-300 text-xs font-bold py-1.5 px-3 rounded-lg transition flex items-center justify-center gap-1.5" title="Editar informações">
+                                    <i class="fa-solid fa-pen-to-square"></i> Editar Rolo
+                                </button>
+                                <button onclick="excluirFilamento(${f.id})" class="bg-slate-850 hover:bg-rose-950/40 hover:text-rose-400 text-slate-300 text-xs p-1.5 px-2.5 rounded-lg transition" title="Excluir rolo">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    gridDiv.insertAdjacentHTML('beforeend', cardHtml);
+                });
+            } 
+            // MODO DE VISUALIZAÇÃO: TABELA RESPONSIVA
+            else {
+                const tableWrap = document.createElement('div');
+                tableWrap.className = "bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl";
+                
+                let tbodyHtml = '';
+                filtered.forEach(f => {
+                    const percentage = Math.round((f.currentWeight / f.totalWeight) * 100);
+                    const valorRestante = ((f.price * f.currentWeight) / f.totalWeight).toFixed(2);
+                    
+                    let progressBg = 'bg-emerald-500';
+                    let rowAlertStyle = '';
+                    if (f.currentWeight <= 0) {
+                        progressBg = 'bg-slate-800';
+                    } else if (f.currentWeight < 150) {
+                        progressBg = 'bg-rose-500';
+                        rowAlertStyle = 'bg-rose-950/5';
+                    } else if (f.currentWeight < 350) {
+                        progressBg = 'bg-amber-500';
+                    }
+
+                    tbodyHtml += `
+                        <tr class="border-b border-slate-800/60 hover:bg-slate-800/20 transition ${rowAlertStyle}">
+                            <td class="py-3 pl-4">
+                                <div class="flex items-center gap-2.5">
+                                    <span class="w-3.5 h-3.5 rounded-full border border-slate-700 shrink-0" style="background-color: ${f.colorHex}"></span>
+                                    <div>
+                                        <span class="font-bold text-white block leading-tight text-xs sm:text-sm">${f.colorName}</span>
+                                        <span class="text-[10px] text-slate-500 font-semibold block">${f.brand}</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3">
+                                <span class="bg-slate-950 text-indigo-400 border border-indigo-900/30 text-[10px] font-black px-2 py-0.5 rounded">${f.material} ${f.variation}</span>
+                            </td>
+                            <td class="py-3">
+                                <div class="flex flex-col gap-1 max-w-[120px]">
+                                    <span class="text-xs text-slate-300 font-bold">${f.currentWeight}g <span class="text-[10px] text-slate-500 font-normal">/ ${f.totalWeight}g</span></span>
+                                    <div class="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden">
+                                        <div class="h-full ${progressBg} rounded-full" style="width: ${percentage}%"></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="py-3 text-xs font-semibold text-emerald-400">
+                                R$ ${valorRestante.replace('.', ',')}
+                            </td>
+                            <td class="py-3 text-xs text-slate-400 hidden sm:table-cell">
+                                ${f.supplier || 'Não informado'}
+                            </td>
+                            <td class="py-3 pr-4 text-right">
+                                <div class="flex justify-end gap-1.5">
+                                    <button onclick="prepararEdicao(${f.id})" class="bg-slate-800 hover:bg-slate-750 text-indigo-400 p-1.5 rounded-lg transition text-xs" title="Editar">
+                                        <i class="fa-solid fa-pen-to-square"></i>
+                                    </button>
+                                    <button onclick="excluirFilamento(${f.id})" class="bg-slate-800 hover:bg-rose-950/40 text-rose-400 p-1.5 rounded-lg transition text-xs" title="Excluir">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                tableWrap.innerHTML = `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-slate-800 text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                                    <th class="py-3 pl-4">Filamento</th>
+                                    <th class="py-3">Tipo</th>
+                                    <th class="py-3">Disponibilidade (g)</th>
+                                    <th class="py-3">Sobra R$</th>
+                                    <th class="py-3 hidden sm:table-cell">Fornecedor</th>
+                                    <th class="py-3 pr-4 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/40 text-slate-300">
+                                ${tbodyHtml}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                container.appendChild(tableWrap);
+            }
+        }
+
+        // SALVAR OU EDITAR FILAMENTO
+        function salvarFilamento(event) {
+            event.preventDefault();
+
+            const id = document.getElementById('edit-id').value;
+            const selectBrand = document.getElementById('brand-select').value;
+            const customBrand = document.getElementById('brand-custom').value.trim();
+            const material = document.getElementById('material').value;
+            
+            const selectVariation = document.getElementById('variation').value;
+            const customVariation = document.getElementById('variation-custom').value.trim();
+
+            const colorName = document.getElementById('color-name').value.trim();
+            const colorHex = document.getElementById('color-hex').value;
+            const totalWeight = Number(document.getElementById('total-weight').value);
+            const currentWeight = Number(document.getElementById('current-weight').value);
+            const price = Number(document.getElementById('price').value);
+            const supplier = document.getElementById('supplier').value.trim() || 'Desconhecido';
+            const notes = document.getElementById('notes').value.trim();
+
+            // Salvar Marca Customizada
+            let finalBrand = selectBrand;
+            if (selectBrand === '_outro_') {
+                if (!customBrand) {
+                    showToast("Por favor, digite o nome do novo fabricante.", "error");
+                    return;
+                }
+                finalBrand = customBrand;
+                if (!brands.includes(finalBrand)) {
+                    brands.push(finalBrand);
+                    localStorage.setItem('brands_db', JSON.stringify(brands));
+                    popularSelectMarcas();
+                    popularFiltrosCompra();
+                }
+            }
+
+            // Salvar Variação Customizada
+            let finalVariation = selectVariation;
+            if (selectVariation === '_outro_') {
+                if (!customVariation) {
+                    showToast("Por favor, digite o nome da nova variação.", "error");
+                    return;
+                }
+                finalVariation = customVariation;
+                if (!variations.includes(finalVariation)) {
+                    variations.push(finalVariation);
+                    localStorage.setItem('variations_db', JSON.stringify(variations));
+                    popularSelectVariacoes();
+                    popularFiltrosCompra();
+                }
+            }
+
+            if (currentWeight > totalWeight) {
+                showToast("O peso atual não pode exceder o peso total inicial do rolo!", "error");
+                return;
+            }
+
+            if (id) {
+                const idx = filaments.findIndex(f => f.id === Number(id));
+                if (idx !== -1) {
+                    filaments[idx] = {
+                        ...filaments[idx],
+                        brand: finalBrand, material, variation: finalVariation, colorName, colorHex, totalWeight, currentWeight, price, supplier, notes
+                    };
+                    showToast(`Filamento ${colorName} atualizado com sucesso.`);
+                }
+            } else {
+                const novoFilamento = {
+                    id: Date.now(),
+                    brand: finalBrand,
+                    material,
+                    variation: finalVariation,
+                    colorName,
+                    colorHex,
+                    totalWeight,
+                    currentWeight,
+                    price,
+                    supplier,
+                    notes,
+                    date: new Date().toISOString().split('T')[0]
+                };
+                filaments.push(novoFilamento);
+                showToast(`Filamento ${colorName} cadastrado com sucesso.`);
+            }
+
+            localStorage.setItem('filament_db', JSON.stringify(filaments));
+            limparFormulario();
+            atualizarPainel();
+            popularFiltrosCompra();
+        }
+
+        // CARREGAR INFORMAÇÕES NO FORM DE EDIÇÃO
+        function prepararEdicao(id) {
+            const f = filaments.find(item => item.id === id);
+            if (!f) return;
+
+            document.getElementById('edit-id').value = f.id;
+            
+            if (brands.includes(f.brand)) {
+                document.getElementById('brand-select').value = f.brand;
+            } else {
+                brands.push(f.brand);
+                localStorage.setItem('brands_db', JSON.stringify(brands));
+                popularSelectMarcas();
+                document.getElementById('brand-select').value = f.brand;
+            }
+            toggleCustomBrand();
+
+            if (variations.includes(f.variation)) {
+                document.getElementById('variation').value = f.variation;
+            } else {
+                variations.push(f.variation);
+                localStorage.setItem('variations_db', JSON.stringify(variations));
+                popularSelectVariacoes();
+                document.getElementById('variation').value = f.variation;
+            }
+            toggleCustomVariation();
+
+            document.getElementById('material').value = f.material;
+            document.getElementById('color-name').value = f.colorName;
+            document.getElementById('color-hex').value = f.colorHex;
+            document.getElementById('total-weight').value = f.totalWeight;
+            document.getElementById('current-weight').value = f.currentWeight;
+            document.getElementById('price').value = f.price;
+            document.getElementById('supplier').value = f.supplier === 'Desconhecido' ? '' : f.supplier;
+            document.getElementById('notes').value = f.notes || '';
+
+            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500 animate-pulse"></i> Editando Filamento`;
+            document.getElementById('submit-btn-text').textContent = 'Salvar Alterações';
+            document.getElementById('cancel-edit-btn').classList.remove('hidden');
+
+            mostrarDicasMaterial();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function limparFormulario() {
+            document.getElementById('filament-form').reset();
+            document.getElementById('edit-id').value = '';
+            document.getElementById('color-hex').value = '#4f46e5';
+
+            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-circle-plus text-indigo-500"></i> Cadastrar Filamento`;
+            document.getElementById('submit-btn-text').textContent = 'Cadastrar no Estoque';
+            document.getElementById('cancel-edit-btn').classList.add('hidden');
+            
+            toggleCustomBrand();
+            toggleCustomVariation();
+            mostrarDicasMaterial();
+        }
+
+        // DELETAR FILAMENTO
+        function excluirFilamento(id) {
+            const f = filaments.find(item => item.id === id);
+            if (confirm(`Deseja realmente remover permanentemente o filamento "${f.colorName}" do seu estoque?`)) {
+                filaments = filaments.filter(item => item.id !== id);
+                localStorage.setItem('filament_db', JSON.stringify(filaments));
+                atualizarPainel();
+                popularFiltrosCompra();
+                showToast("Filamento removido do estoque.", "warning");
+            }
+        }
+
+        // FILTROS DA LISTAGEM DE ESTOQUE ATIVO
+        function filtrarLista() {
+            renderizarListaFilamentos();
+        }
+
+        function filtrarMaterialEstoque(material) {
+            currentStockFilterMaterial = material;
+            
+            document.querySelectorAll('.mat-filter-btn').forEach(btn => {
+                if (btn.getAttribute('data-material') === material) {
+                    btn.className = "mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-indigo-600 text-white rounded-lg transition shrink-0";
+                } else {
+                    btn.className = "mat-filter-btn px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition shrink-0";
+                }
+            });
+
+            renderizarListaFilamentos();
+        }
+
+        // RENDERIZAR HISTÓRICO DE COMPRAS (ABA 2)
+        function renderizarHistoricoCompras() {
+            const tbody = document.getElementById('purchases-tbody');
+            const emptyState = document.getElementById('empty-purchases-state');
+            
+            tbody.innerHTML = '';
+
+            const brandFilter = document.getElementById('filter-purchase-brand').value;
+            const materialFilter = document.getElementById('filter-purchase-material').value;
+            const variationFilter = document.getElementById('filter-purchase-variation').value;
+            const dateStart = document.getElementById('filter-purchase-date-start').value;
+            const dateEnd = document.getElementById('filter-purchase-date-end').value;
+
+            const filteredPurchases = filaments.filter(f => {
+                const matchesBrand = brandFilter === 'TODOS' || f.brand === brandFilter;
+                const matchesMaterial = materialFilter === 'TODOS' || f.material === materialFilter;
+                const matchesVariation = variationFilter === 'TODOS' || f.variation === variationFilter;
+                
+                let matchesDate = true;
+                if (dateStart) {
+                    matchesDate = matchesDate && (f.date >= dateStart);
+                }
+                if (dateEnd) {
+                    matchesDate = matchesDate && (f.date <= dateEnd);
+                }
+
+                return matchesBrand && matchesMaterial && matchesVariation && matchesDate;
+            });
+
+            if (filteredPurchases.length === 0) {
+                emptyState.classList.remove('hidden');
+                document.getElementById('total-filtered-spending').textContent = "R$ 0,00";
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            let totalSpent = 0;
+
+            filteredPurchases.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(f => {
+                totalSpent += Number(f.price);
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/20 transition duration-150';
+                tr.innerHTML = `
+                    <td class="py-3.5 pl-4 flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full border border-slate-700 block" style="background-color: ${f.colorHex}"></span>
+                        <span class="font-bold text-white">${f.colorName}</span>
+                        <span class="text-[10px] text-slate-500 font-bold bg-slate-950 px-1.5 py-0.5 rounded border border-slate-800/40">${f.material} ${f.variation}</span>
+                    </td>
+                    <td class="py-3.5 text-slate-300 font-medium">${f.brand}</td>
+                    <td class="py-3.5 text-slate-400">${f.supplier}</td>
+                    <td class="py-3.5 text-slate-400">${formatarData(f.date)}</td>
+                    <td class="py-3.5 text-slate-400 font-semibold">${f.totalWeight}g</td>
+                    <td class="py-3.5 text-right pr-4 text-indigo-400 font-bold">R$ ${Number(f.price).toFixed(2).replace('.', ',')}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('total-filtered-spending').textContent = `R$ ${totalSpent.toFixed(2).replace('.', ',')}`;
+        }
+
+        function limparFiltrosCompra() {
+            document.getElementById('filter-purchase-brand').value = 'TODOS';
+            document.getElementById('filter-purchase-material').value = 'TODOS';
+            document.getElementById('filter-purchase-variation').value = 'TODOS';
+            document.getElementById('filter-purchase-date-start').value = '';
+            document.getElementById('filter-purchase-date-end').value = '';
+            renderizarHistoricoCompras();
+        }
+
+        /* =======================================================
+           SISTEMA AVANÇADO DE PROJETOS MULTICOMPONENTES (MODAL)
+           ======================================================= */
+
+        // Abrir Modal de Projeto
+        function abrirModalProjeto() {
+            // Verificar se temos filamentos disponíveis com saldo
+            const activeFilaments = filaments.filter(f => f.currentWeight > 0);
+            if (activeFilaments.length === 0) {
+                showToast("Você precisa ter filamentos ativos com peso disponível para criar um projeto!", "error");
+                return;
+            }
+
+            // Limpa campos do modal para criação de novo projeto
+            document.getElementById('proj-edit-id').value = '';
+            document.getElementById('proj-name').value = '';
+            document.getElementById('proj-notes').value = '';
+            document.getElementById('proj-time-hours').value = '';
+            document.getElementById('proj-time-minutes').value = '';
+            document.getElementById('proj-filaments-container').innerHTML = '';
+            document.getElementById('proj-extras-container').innerHTML = '';
+            
+            document.getElementById('project-modal-title').innerHTML = `<i class="fa-solid fa-square-plus text-indigo-500"></i> Registrar Novo Projeto 3D`;
+            document.getElementById('project-submit-btn').textContent = "Deduzir e Criar Projeto";
+
+            // Inicia com uma linha de filamento padrão
+            adicionarLinhaFilamento();
+            
+            // Reseta Status
+            document.querySelector('input[name="proj-status"][value="sucesso"]').checked = true;
+            setProjRating(5);
+            toggleProjStatusFields();
+
+            recalcularTotaisProjeto();
+
+            document.getElementById('project-modal').classList.remove('hidden');
+        }
+
+        function fecharModalProjeto() {
+            document.getElementById('project-modal').classList.add('hidden');
+        }
+
+        // Adicionar Linha de Filamento Usado no Projeto (Suporta dados pré-carregados para Edição)
+        function adicionarLinhaFilamento(savedId = null, savedWeight = null) {
+            const container = document.getElementById('proj-filaments-container');
+            const rowId = 'fil-row-' + Date.now() + '-' + Math.floor(Math.random() * 100);
+
+            // Popula as opções com filamentos que têm peso ativo
+            let optionsHtml = '';
+            filaments.forEach(f => {
+                // Se for o filamento que já estava salvo no projeto, permite ele aparecer mesmo se o peso atual for zero agora (para edição lógica consistente)
+                if (f.currentWeight > 0 || f.id === savedId) {
+                    const isSelected = f.id === savedId ? 'selected' : '';
+                    optionsHtml += `<option value="${f.id}" data-price="${f.price}" data-totalweight="${f.totalWeight}" data-currentweight="${f.currentWeight}" ${isSelected}>${f.brand} ${f.material} (${f.colorName}) - Disp: ${f.currentWeight}g</option>`;
+                }
+            });
+
+            // Se o filamento original do projeto não foi achado no estoque de filamentos (foi excluído no meio do caminho)
+            if (savedId && !filaments.some(f => f.id === savedId)) {
+                optionsHtml += `<option value="${savedId}" data-price="0" data-totalweight="1000" data-currentweight="0" selected>[FILAMENTO EXCLUÍDO DO ESTOQUE]</option>`;
+            }
+
+            const weightVal = savedWeight !== null ? savedWeight : '';
+
+            const rowHtml = `
+                <div id="${rowId}" class="flex flex-wrap items-center gap-2.5 bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs">
+                    <div class="flex-grow min-w-[200px]">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">Escolha o Filamento</label>
+                        <select onchange="recalcularTotaisProjeto()" class="filament-select w-full bg-slate-950 border border-slate-850 px-2 py-1.5 rounded-lg text-white outline-none">
+                            ${optionsHtml}
+                        </select>
+                    </div>
+                    <div class="w-24">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">Gasto (g)</label>
+                        <input type="number" min="1" placeholder="Ex: 80" value="${weightVal}" oninput="recalcularTotaisProjeto()" required class="filament-weight w-full bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-lg text-white text-center font-bold outline-none">
+                    </div>
+                    <div class="text-right px-2 min-w-[70px]">
+                        <span class="block text-[9px] text-slate-500 uppercase">Custo</span>
+                        <span class="filament-cost font-black text-indigo-400">R$ 0,00</span>
+                    </div>
+                    <button type="button" onclick="removerLinha('${rowId}')" class="text-rose-500 hover:text-rose-400 p-1.5 mt-4" title="Remover este item">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', rowHtml);
+            recalcularTotaisProjeto();
+        }
+
+        // Adicionar Linha de Custo Extra / Acessórios (Imãs, Chaveiros, etc)
+        function adicionarLinhaExtra(savedName = '', savedCost = null) {
+            const container = document.getElementById('proj-extras-container');
+            const rowId = 'ext-row-' + Date.now() + '-' + Math.floor(Math.random() * 100);
+
+            const costVal = savedCost !== null ? savedCost : '';
+
+            const rowHtml = `
+                <div id="${rowId}" class="flex items-center gap-2.5 bg-slate-900 border border-slate-800 p-2.5 rounded-xl text-xs">
+                    <div class="flex-grow">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">Acessório / Detalhe</label>
+                        <input type="text" placeholder="Ex: Chaveiro Argola, Imã 8mm, LED USB" value="${savedName}" required class="extra-name w-full bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-lg text-white outline-none">
+                    </div>
+                    <div class="w-24">
+                        <label class="block text-[10px] font-bold text-slate-400 mb-1">Custo (R$)</label>
+                        <input type="number" step="0.01" min="0" placeholder="Ex: 1.50" value="${costVal}" oninput="recalcularTotaisProjeto()" required class="extra-cost w-full bg-slate-950 border border-slate-850 px-2.5 py-1 rounded-lg text-white text-center font-bold outline-none">
+                    </div>
+                    <button type="button" onclick="removerLinha('${rowId}')" class="text-rose-500 hover:text-rose-400 p-1.5 mt-4" title="Remover acessório">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', rowHtml);
+            recalcularTotaisProjeto();
+        }
+
+        // Remover linha de qualquer container
+        function removerLinha(id) {
+            const el = document.getElementById(id);
+            if (el) {
+                el.remove();
+                recalcularTotaisProjeto();
+            }
+        }
+
+        // Controlar visualização de campos dinâmicos por resultado
+        function toggleProjStatusFields() {
+            const status = document.querySelector('input[name="proj-status"]:checked').value;
+            const successDiv = document.getElementById('proj-status-success');
+            const failDiv = document.getElementById('proj-status-fail');
+
+            if (status === 'sucesso') {
+                successDiv.classList.remove('hidden');
+                failDiv.classList.add('hidden');
+            } else {
+                successDiv.classList.add('hidden');
+                failDiv.classList.remove('hidden');
+            }
+        }
+
+        // Setar avaliação de estrelas no modal do projeto
+        function setProjRating(val) {
+            document.getElementById('proj-rating').value = val;
+            const starBtns = document.querySelectorAll('.proj-star-btn');
+            starBtns.forEach((btn, idx) => {
+                if (idx < val) {
+                    btn.innerHTML = '<i class="fa-solid fa-star text-amber-500"></i>';
+                } else {
+                    btn.innerHTML = '<i class="fa-regular fa-star text-slate-600"></i>';
+                }
+            });
+        }
+
+        // RECALCULAR TOTAIS FINANCEIROS DO PROJETO EM TEMPO REAL
+        function recalcularTotaisProjeto() {
+            let totalFilamentsCost = 0;
+            let totalExtrasCost = 0;
+
+            // 1. Processar Custos de Filamentos
+            const filRows = document.querySelectorAll('#proj-filaments-container > div');
+            filRows.forEach(row => {
+                const select = row.querySelector('.filament-select');
+                const weightInput = row.querySelector('.filament-weight');
+                const costDisplay = row.querySelector('.filament-cost');
+
+                if (select && weightInput) {
+                    const option = select.options[select.selectedIndex];
+                    const weight = Number(weightInput.value) || 0;
+                    
+                    if (option) {
+                        const price = Number(option.getAttribute('data-price')) || 0;
+                        const totalWeight = Number(option.getAttribute('data-totalweight')) || 1000;
+                        
+                        // Custo = Peso Gasto * (Preço / Peso Inicial)
+                        const rowCost = weight * (price / totalWeight);
+                        totalFilamentsCost += rowCost;
+
+                        costDisplay.textContent = `R$ ${rowCost.toFixed(2).replace('.', ',')}`;
+                    }
+                }
+            });
+
+            // 2. Processar Custos Extras
+            const extRows = document.querySelectorAll('#proj-extras-container > div');
+            extRows.forEach(row => {
+                const costInput = row.querySelector('.extra-cost');
+                if (costInput) {
+                    const val = Number(costInput.value) || 0;
+                    totalExtrasCost += val;
+                }
+            });
+
+            // 3. Atualizar Layout do Resumo
+            document.getElementById('sum-filaments-cost').textContent = `R$ ${totalFilamentsCost.toFixed(2).replace('.', ',')}`;
+            document.getElementById('sum-extras-cost').textContent = `R$ ${totalExtrasCost.toFixed(2).replace('.', ',')}`;
+            
+            const grandTotal = totalFilamentsCost + totalExtrasCost;
+            document.getElementById('sum-grand-total').textContent = `R$ ${grandTotal.toFixed(2).replace('.', ',')}`;
+        }
+
+        // CONFIRMAR E REGISTRAR O PROJETO (DEDUÇÃO/ESTORNO DE ESTOQUE + LOGS)
+        function confirmarProjeto(event) {
+            event.preventDefault();
+
+            const editId = document.getElementById('proj-edit-id').value;
+            const name = document.getElementById('proj-name').value.trim();
+            const notes = document.getElementById('proj-notes').value.trim();
+            const durationHours = Number(document.getElementById('proj-time-hours').value) || 0;
+            const durationMinutes = Number(document.getElementById('proj-time-minutes').value) || 0;
+            const status = document.querySelector('input[name="proj-status"]:checked').value;
+            const rating = status === 'sucesso' ? Number(document.getElementById('proj-rating').value) : 0;
+            const failureReason = status === 'falha' ? document.getElementById('proj-failure-reason').value : '';
+
+            // Guardar uma cópia dos filamentos originais para caso de rollback caso a operação falhe
+            const originalFilamentsCopy = JSON.parse(JSON.stringify(filaments));
+
+            // ESTORNO SE FOR EDIÇÃO: Se estamos editando um projeto, primeiro de tudo precisamos estornar o peso que foi gasto no projeto original de volta para o estoque!
+            if (editId) {
+                const originalProject = printHistory.find(p => p.id === Number(editId));
+                if (originalProject && originalProject.filamentsUsed) {
+                    originalProject.filamentsUsed.forEach(item => {
+                        const fIdx = filaments.findIndex(f => f.id === item.filamentId);
+                        if (fIdx !== -1) {
+                            filaments[fIdx].currentWeight += item.weightUsed;
+                        }
+                    });
+                }
+            }
+
+            // Arrays de dados de uso do projeto
+            let filamentsUsed = [];
+            let extraCosts = [];
+
+            // Validações de peso e consistência
+            let weightExceeded = false;
+            let noMaterials = true;
+
+            const filRows = document.querySelectorAll('#proj-filaments-container > div');
+            filRows.forEach(row => {
+                const select = row.querySelector('.filament-select');
+                const weightInput = row.querySelector('.filament-weight');
+
+                if (select && weightInput) {
+                    noMaterials = false;
+                    const filamentId = Number(select.value);
+                    const weightUsed = Number(weightInput.value);
+
+                    if (!filamentId || weightUsed <= 0) {
+                        weightExceeded = true;
+                        return;
+                    }
+
+                    const option = select.options[select.selectedIndex];
+                    const price = Number(option.getAttribute('data-price')) || 0;
+                    const totalWeight = Number(option.getAttribute('data-totalweight')) || 1000;
+
+                    // Encontrar rolo no estoque para descontar novo peso
+                    const realFilament = filaments.find(f => f.id === filamentId);
+                    if (realFilament) {
+                        if (weightUsed > realFilament.currentWeight) {
+                            showToast(`Filamento ${realFilament.colorName} não possui quantidade suficiente! Disp: ${realFilament.currentWeight}g`, "error");
+                            weightExceeded = true;
+                            return;
+                        }
+
+                        const cost = weightUsed * (price / totalWeight);
+
+                        filamentsUsed.push({
+                            filamentId: realFilament.id,
+                            brand: realFilament.brand,
+                            material: realFilament.material,
+                            variation: realFilament.variation,
+                            colorName: realFilament.colorName,
+                            colorHex: realFilament.colorHex,
+                            weightUsed,
+                            cost: Number(cost.toFixed(2))
+                        });
+                    }
+                }
+            });
+
+            if (noMaterials) {
+                showToast("Por favor, adicione pelo menos um filamento ao seu projeto.", "error");
+                // Em caso de falha de validação, restaura o backup de pesos para não perder consistência
+                filaments = originalFilamentsCopy;
+                return;
+            }
+
+            if (weightExceeded) {
+                // Em caso de falha, desfaz o estorno e volta ao estado anterior
+                filaments = originalFilamentsCopy;
+                return;
+            }
+
+            // Ler Custos Extras
+            const extRows = document.querySelectorAll('#proj-extras-container > div');
+            extRows.forEach(row => {
+                const nameInput = row.querySelector('.extra-name');
+                const costInput = row.querySelector('.extra-cost');
+
+                if (nameInput && costInput) {
+                    const extraName = nameInput.value.trim();
+                    const extraCost = Number(costInput.value) || 0;
+
+                    extraCosts.push({
+                        name: extraName,
+                        cost: Number(extraCost.toFixed(2))
+                    });
+                }
+            });
+
+            // Deduzir peso do estoque real
+            filamentsUsed.forEach(item => {
+                const fIndex = filaments.findIndex(f => f.id === item.filamentId);
+                if (fIndex !== -1) {
+                    filaments[fIndex].currentWeight = Math.max(0, filaments[fIndex].currentWeight - item.weightUsed);
+                }
+            });
+
+            // Calcular totais finais
+            const totalFilamentCost = filamentsUsed.reduce((acc, f) => acc + f.cost, 0);
+            const totalExtraCost = extraCosts.reduce((acc, e) => acc + e.cost, 0);
+            const grandTotalCost = totalFilamentCost + totalExtraCost;
+
+            if (editId) {
+                // Atualizar projeto existente
+                const projectIndex = printHistory.findIndex(p => p.id === Number(editId));
+                if (projectIndex !== -1) {
+                    printHistory[projectIndex] = {
+                        ...printHistory[projectIndex],
+                        pieceName: name,
+                        notes: notes,
+                        status: status,
+                        rating: rating,
+                        failureReason: failureReason,
+                        durationHours,
+                        durationMinutes,
+                        filamentsUsed,
+                        extraCosts,
+                        totalFilamentCost: Number(totalFilamentCost.toFixed(2)),
+                        totalExtraCost: Number(totalExtraCost.toFixed(2)),
+                        grandTotalCost: Number(grandTotalCost.toFixed(2))
+                    };
+                    showToast(`Projeto "${name}" editado e estoque recalculado!`);
+                }
+            } else {
+                // Criar entrada no histórico
+                const projectEntry = {
+                    id: Date.now(),
+                    pieceName: name,
+                    notes: notes,
+                    date: new Date().toISOString(),
+                    status: status,
+                    rating: rating,
+                    failureReason: failureReason,
+                    durationHours,
+                    durationMinutes,
+                    filamentsUsed,
+                    extraCosts,
+                    totalFilamentCost: Number(totalFilamentCost.toFixed(2)),
+                    totalExtraCost: Number(totalExtraCost.toFixed(2)),
+                    grandTotalCost: Number(grandTotalCost.toFixed(2))
+                };
+                printHistory.push(projectEntry);
+                showToast(`Projeto "${name}" registrado com sucesso!`);
+            }
+
+            // Salvar no LocalStorage
+            localStorage.setItem('filament_db', JSON.stringify(filaments));
+            localStorage.setItem('print_history_db', JSON.stringify(printHistory));
+
+            fecharModalProjeto();
+            atualizarPainel();
+
+            // Se a aba atual for a de histórico, atualiza na hora
+            if (!document.getElementById('tab-prints').classList.contains('hidden')) {
+                renderizarHistoricoPrints();
+                atualizarMetricasConfiabilidade();
+            }
+        }
+
+        // PREPARAR EDIÇÃO DE PROJETO SALVO
+        function prepararEdicaoProjeto(id) {
+            const project = printHistory.find(p => p.id === id);
+            if (!project) return;
+
+            // Abrir e estilizar modal para edição
+            document.getElementById('project-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500 animate-pulse"></i> Editar Projeto 3D`;
+            document.getElementById('project-submit-btn').textContent = "Salvar Alterações";
+            document.getElementById('proj-edit-id').value = project.id;
+
+            // Preencher campos
+            document.getElementById('proj-name').value = project.pieceName;
+            document.getElementById('proj-notes').value = project.notes || '';
+            document.getElementById('proj-time-hours').value = project.durationHours !== undefined ? project.durationHours : '';
+            document.getElementById('proj-time-minutes').value = project.durationMinutes !== undefined ? project.durationMinutes : '';
+
+            // Limpar containers dinâmicos
+            document.getElementById('proj-filaments-container').innerHTML = '';
+            document.getElementById('proj-extras-container').innerHTML = '';
+
+            // Reconstruir linhas de filamentos usados
+            if (project.filamentsUsed && project.filamentsUsed.length > 0) {
+                project.filamentsUsed.forEach(fu => {
+                    adicionarLinhaFilamento(fu.filamentId, fu.weightUsed);
+                });
+            } else {
+                adicionarLinhaFilamento();
+            }
+
+            // Reconstruir custos adicionais
+            if (project.extraCosts && project.extraCosts.length > 0) {
+                project.extraCosts.forEach(ec => {
+                    adicionarLinhaExtra(ec.name, ec.cost);
+                });
+            }
+
+            // Ajustar status e visualização
+            if (project.status === 'sucesso') {
+                document.querySelector('input[name="proj-status"][value="sucesso"]').checked = true;
+                setProjRating(project.rating || 5);
+            } else {
+                document.querySelector('input[name="proj-status"][value="falha"]').checked = true;
+                document.getElementById('proj-failure-reason').value = project.failureReason || 'Descolamento da Mesa (Warping)';
+            }
+            toggleProjStatusFields();
+            recalcularTotaisProjeto();
+
+            // Abre o modal
+            document.getElementById('project-modal').classList.remove('hidden');
+        }
+
+        // EXCLUIR PROJETO DO HISTÓRICO COM REVERSÃO DE PESO
+        function excluirProjeto(id) {
+            const project = printHistory.find(p => p.id === id);
+            if (!project) return;
+
+            if (confirm(`Deseja realmente excluir o projeto "${project.pieceName}"? O peso dos filamentos consumidos será devolvido ao seu estoque!`)) {
+                // Devolver os pesos de volta aos rolos
+                if (project.filamentsUsed) {
+                    project.filamentsUsed.forEach(item => {
+                        const fIdx = filaments.findIndex(f => f.id === item.filamentId);
+                        if (fIdx !== -1) {
+                            filaments[fIdx].currentWeight += item.weightUsed;
+                        }
+                    });
+                }
+
+                // Filtrar e salvar
+                printHistory = printHistory.filter(p => p.id !== id);
+                localStorage.setItem('filament_db', JSON.stringify(filaments));
+                localStorage.setItem('print_history_db', JSON.stringify(printHistory));
+
+                atualizarPainel();
+                renderizarHistoricoPrints();
+                atualizarMetricasConfiabilidade();
+                showToast(`Projeto "${project.pieceName}" deletado. Peso estornado ao estoque.`, "warning");
+            }
+        }
+
+        // RENDERIZAR ABA DE IMPRESSÕES & DIAGNÓSTICO DE CONFIABILIDADE (ABA 3)
+        function renderizarHistoricoPrints() {
+            const tbody = document.getElementById('history-tbody');
+            const emptyState = document.getElementById('empty-history-state');
+            tbody.innerHTML = '';
+
+            if (printHistory.length === 0) {
+                emptyState.classList.remove('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+            }
+
+            [...printHistory].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(h => {
+                const tr = document.createElement('tr');
+                tr.className = 'border-b border-slate-800/50 hover:bg-slate-800/20 transition duration-150';
+
+                // Garantia de filamentos usados
+                const filamentsList = h.filamentsUsed || [];
+                const extrasList = h.extraCosts || [];
+
+                // 1. Renderizar coluna de materiais de forma compacta e moderna
+                let materialsMarkup = '<div class="space-y-1 py-1">';
+                filamentsList.forEach(item => {
+                    materialsMarkup += `
+                        <div class="flex items-center gap-1.5 text-xs text-slate-300">
+                            <span class="w-2.5 h-2.5 rounded-full border border-slate-700 block shrink-0" style="background-color: ${item.colorHex}"></span>
+                            <span class="font-bold text-white">${item.brand} ${item.material}</span>
+                            <span class="text-slate-500 font-medium">(${item.weightUsed}g)</span>
+                        </div>
+                    `;
+                });
+                materialsMarkup += '</div>';
+
+                // 2. Renderizar coluna de extras
+                let extrasMarkup = '<div class="space-y-1 py-1 text-slate-400 text-xs">';
+                if (extrasList.length === 0) {
+                    extrasMarkup += '<span class="text-slate-600 font-medium italic">Sem acessórios</span>';
+                } else {
+                    extrasList.forEach(item => {
+                        extrasMarkup += `
+                            <div class="flex items-center gap-1">
+                                <i class="fa-solid fa-paperclip text-[10px] text-slate-600"></i>
+                                <span>${item.name} <span class="text-slate-500 font-bold">(R$ ${item.cost.toFixed(2).replace('.', ',')})</span></span>
+                            </div>
+                        `;
+                    });
+                }
+                extrasMarkup += '</div>';
+
+                // 3. Renderizar coluna de status / qualidade
+                let statusMarkup = '';
+                if (h.status === 'sucesso') {
+                    let stars = '';
+                    const ratingValue = h.rating || 5;
+                    for (let i = 1; i <= 5; i++) {
+                        if (i <= ratingValue) {
+                            stars += '<i class="fa-solid fa-star text-amber-500 text-[9px]"></i>';
+                        } else {
+                            stars += '<i class="fa-regular fa-star text-slate-700 text-[9px]"></i>';
+                        }
+                    }
+                    statusMarkup = `
+                        <div class="flex flex-col">
+                            <span class="text-emerald-400 font-bold text-xs flex items-center gap-1"><i class="fa-solid fa-circle-check text-[10px]"></i> Sucesso</span>
+                            <div class="flex gap-0.5 mt-0.5">${stars}</div>
+                        </div>
+                    `;
+                } else {
+                    statusMarkup = `
+                        <div class="flex flex-col">
+                            <span class="text-rose-400 font-bold text-xs flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-[10px]"></i> Falha</span>
+                            <span class="text-[9px] text-rose-500 font-black leading-tight max-w-[130px] break-words">${h.failureReason || 'Não informado'}</span>
+                        </div>
+                    `;
+                }
+
+                // Formatação do tempo de execução
+                let timeBadge = '';
+                if ((h.durationHours !== undefined && h.durationHours > 0) || (h.durationMinutes !== undefined && h.durationMinutes > 0)) {
+                    const hoursText = h.durationHours ? `${h.durationHours}h` : '';
+                    const minsText = h.durationMinutes ? `${h.durationMinutes}min` : '';
+                    timeBadge = `<span class="bg-indigo-950 text-indigo-400 border border-indigo-900/40 px-1.5 py-0.5 rounded text-[10px] font-bold inline-flex items-center gap-1 mt-1"><i class="fa-solid fa-clock"></i> ${hoursText} ${minsText}</span>`;
+                }
+
+                const displayTotalCost = h.grandTotalCost || 0;
+
+                tr.innerHTML = `
+                    <td class="py-3 pl-4">
+                        <span class="font-bold text-white block leading-tight text-sm">${h.pieceName}</span>
+                        <span class="text-xs text-slate-400 block max-w-[200px] truncate italic" title="${h.notes || ''}">${h.notes || 'Sem observações'}</span>
+                    </td>
+                    <td class="py-3">
+                        <span class="text-xs text-slate-400 block">${formatarDataCompleta(h.date)}</span>
+                        ${timeBadge}
+                    </td>
+                    <td class="py-3">${materialsMarkup}</td>
+                    <td class="py-3">${extrasMarkup}</td>
+                    <td class="py-3">${statusMarkup}</td>
+                    <td class="py-3 text-emerald-400 font-black text-sm">R$ ${displayTotalCost.toFixed(2).replace('.', ',')}</td>
+                    <td class="py-3 pr-4 text-right">
+                        <div class="flex justify-end gap-1">
+                            <button onclick="prepararEdicaoProjeto(${h.id})" class="text-indigo-400 hover:bg-slate-800 p-1.5 rounded transition" title="Editar Projeto">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="excluirProjeto(${h.id})" class="text-rose-500 hover:bg-rose-950/30 p-1.5 rounded transition" title="Excluir Projeto e Devolver Peso">
+                                <i class="fa-solid fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // CALCULAR METRICAS DE CONFIABILIDADE DO PAINEL GERAL DE PROJETOS
+        function atualizarMetricasConfiabilidade() {
+            const total = printHistory.length;
+            document.getElementById('stat-total-prints').textContent = total;
+
+            if (total === 0) {
+                document.getElementById('stat-print-success-rate').textContent = '0.0%';
+                document.getElementById('stat-main-failure-reason').textContent = 'Nenhum';
+                return;
+            }
+
+            const sucessos = printHistory.filter(h => h.status === 'sucesso').length;
+            const successRate = (sucessos / total) * 100;
+            document.getElementById('stat-print-success-rate').textContent = `${successRate.toFixed(1)}%`;
+
+            const falhas = printHistory.filter(h => h.status === 'falha');
+            if (falhas.length === 0) {
+                document.getElementById('stat-main-failure-reason').textContent = 'Nenhum';
+                return;
+            }
+
+            const frequency = {};
+            falhas.forEach(f => {
+                const reason = f.failureReason || 'Motivo desconhecido';
+                frequency[reason] = (frequency[reason] || 0) + 1;
+            });
+
+            let mainFailure = 'Nenhum';
+            let maxCount = 0;
+            for (const reason in frequency) {
+                if (frequency[reason] > maxCount) {
+                    maxCount = frequency[reason];
+                    mainFailure = reason;
+                }
+            }
+
+            document.getElementById('stat-main-failure-reason').textContent = `${mainFailure} (${maxCount}x)`;
+        }
+
+        // LIMPAR HISTÓRICO DE CONSUMO
+        function limparHistorico() {
+            if (confirm("Você quer deletar permanentemente todo o histórico de uso dos filamentos? Seu estoque atual não sofrerá alteração.")) {
+                printHistory = [];
+                localStorage.setItem('print_history_db', JSON.stringify(printHistory));
+                atualizarMetricasConfiabilidade();
+                renderizarHistoricoPrints();
+                showToast("Histórico de consumo resetado.", "warning");
+            }
+        }
+
+        // EXPORTAR DADOS DE CONFIGURAÇÃO (BACKUP)
+        function exportarDados() {
+            const backup = {
+                filaments,
+                printHistory,
+                brands,
+                variations
+            };
+            const jsonStr = `data:text/json;charset=utf-8,${encodeURIComponent(JSON.stringify(backup, null, 2))}`;
+            const dlAnchor = document.createElement('a');
+            dlAnchor.setAttribute("href", jsonStr);
+            dlAnchor.setAttribute("download", `backup_primetech_hub3d_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(dlAnchor);
+            dlAnchor.click();
+            dlAnchor.remove();
+            showToast("Backup exportado para sua máquina!");
+        }
+
+        // IMPORTAR DADOS DE BACKUP
+        function importarDados(event) {
+            const input = event.target;
+            const file = input.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed.filaments && Array.isArray(parsed.filaments)) {
+                        filaments = parsed.filaments;
+                        printHistory = parsed.printHistory || [];
+                        brands = parsed.brands || ['eSUN', '3D Prime', 'GTMax', 'Slicex', 'Voolt3D', 'Creality', 'Hatchbox'];
+                        variations = parsed.variations || ['Normal', 'Silk', 'Plus', 'CF', 'Matte', 'Wood'];
+                        
+                        localStorage.setItem('filament_db', JSON.stringify(filaments));
+                        localStorage.setItem('print_history_db', JSON.stringify(printHistory));
+                        localStorage.setItem('brands_db', JSON.stringify(brands));
+                        localStorage.setItem('variations_db', JSON.stringify(variations));
+
+                        popularSelectMarcas();
+                        popularSelectVariacoes();
+                        popularFiltrosCompra();
+                        atualizarPainel();
+                        
+                        showToast("Configurações importadas com absoluto sucesso!");
+                    } else {
+                        showToast("O arquivo não possui uma estrutura de backup compatível.", "error");
+                    }
+                } catch (err) {
+                    showToast("Falha ao ler arquivo de backup. Verifique a estrutura interna.", "error");
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        // AUXILIARES: FORMATAÇÃO DE DATAS
+        function formatarData(dateString) {
+            if (!dateString) return 'N/A';
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return dateString;
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+        }
+
+        function formatarDataCompleta(dateString) {
+            if (!dateString) return 'N/A';
+            const d = new Date(dateString);
+            if (isNaN(d.getTime())) return dateString;
+            return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        }
+    </script>
+</body>
+</html>
