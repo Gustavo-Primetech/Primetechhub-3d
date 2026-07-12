@@ -92,7 +92,7 @@
                     <i class="fa-solid fa-lock text-xl animate-pulse"></i>
                 </div>
                 <h3 class="text-xl font-bold text-white" id="auth-title">Acesse sua Oficina</h3>
-                <p class="text-xs text-slate-400 mt-1" id="auth-subtitle">Conectado ao Supabase com isolamento de dados RLS ativo.</p>
+                <p class="text-xs text-slate-400 mt-1" id="auth-subtitle">Conectado ao Supabase com compartilhamento de estoque ativo.</p>
             </div>
 
             <form id="auth-form" onsubmit="realizarAutenticacao(event)" class="space-y-4">
@@ -931,7 +931,7 @@
             { id: 2, material: "PLA", variation: "Silk", humidity: "Sensibilidade Baixa. Secar a 45°C por 4h se houver 'stringing' excessivo.", thermal: "Baixa resistência térmica (~50°C). Uso puramente estético e decorativo interno.", temps: "Mesa: 50-60°C | Bico: 195-225°C", application: "Vasos, peças decorativas de luxo, esculturas e peças estéticas de alto brilho.", tips: "📌 Bico: Latão 0.4mm\n📌 Setup Especial: Reduza velocidade das paredes externas para 30-40 mm/s para maximizar o brilho." },
             { id: 3, material: "PLA", variation: "CF", humidity: "Sensibilidade Moderada. Guardar em recipiente selado. Secar a 50°C por 4h.", thermal: "Média rigidez mecânica contra torção. Resistência térmica sutilmente superior (~60°C).", temps: "Mesa: 50-60°C | Bico: 210-235°C", application: "Peças estruturais rígidas, capas de proteção foscas com visual robusto.", tips: "📌 Bico: Aço Endurecido de no mínimo 0.4mm (0.6mm recomendado para evitar entupimento).\n📌 Atenção: Fibras de carbono desgastam bicos de latão rapidamente." },
             { id: 4, material: "PETG", variation: "Normal", humidity: "Sensibilidade Moderada. Secar os rolos a 65°C por 5h para evitar fiapos indesejados.", thermal: "Média resistência térmica (suporta até ~75-80°C). Excelente tenacidade e ductilidade.", temps: "Mesa: 70-80°C | Bico: 230-250°C", application: "Suportes veiculares de cabine, suportes de parede e peças mecânicas de desgaste moderado.", tips: "📌 Bico: Latão 0.4mm\n📌 Mesa: PEI Texturizado (evite PEI liso sem cola, pois pode colar definitivo)\n📌 Resfriamento: Baixo (20-40%)" },
-            { id: 5, material: "ABS", variation: "Normal", humidity: "Sensibilidade Moderada. Secar a 70°C por 4h.", thermal: "Alta estabilidade dimensional, tenacidade e resistência térmica (até ~95-100°C).", temps: "Mesa: 100-110°C | Bico: 240-265°C", application: "Engrenagens com atrito, carcaças expostas ao calor, protótipos de engenharia severos.", tips: "📌 Bico: Latão 0.4mm\n📌 Requisito Crítico: Impressora enclausurada (gabinete fechado) obrigatória para evitar delaminação." },
+            { id: 5, material: "ABS", variation: "Normal", humidity: "Sensibilidade Moderada. Secar a 70°C por 4h.", thermal: "Alta estabilidade dimensional, tenacidade e resistência térmica (hasta ~95-100°C).", temps: "Mesa: 100-110°C | Bico: 240-265°C", application: "Engrenagens com atrito, carcaças expostas ao calor, protótipos de engenharia severos.", tips: "📌 Bico: Latão 0.4mm\n📌 Requisito Crítico: Impressora enclausurada (gabinete fechado) obrigatória para evitar delaminação." },
             { id: 6, material: "TPU", variation: "Normal", humidity: "Altíssima Sensibilidade. Secar obrigatoriamente a 55°C por 6h.", thermal: "Absorvedor de impacto e flexibilidade permanente (elastômero). Resistente a óleos.", temps: "Mesa: 0-50°C | Bico: 210-235°C", application: "Juntas de vedação, pneus de robôs, capinhas de celular, calços e solas flexíveis.", tips: "📌 Extrusor: Direct Drive highly recommended.\n📌 Aderência: Cola bastão como desmoldante." }
         ];
 
@@ -1117,7 +1117,7 @@
         function desconectarSupabaseLocal() {
             showCustomConfirm(
                 "Desconectar Banco de Dados",
-                "Tem certeza que deseja sair do Supabase e voltar para o Modo Local Offline? Suas chaves locais serão limpas.",
+                "Tem certeza que deseja sair do Supabase e voltar para o Modo Local Offline? Suas chaves serão limpas.",
                 () => {
                     localStorage.removeItem('supabase_key_db');
                     document.getElementById('supabase-key-input').value = '';
@@ -1635,7 +1635,7 @@
                 if (f.deliveryStatus === 'entregue') {
                     availableValue += value;
                 } else if (f.deliveryStatus === 'aguardando') {
-                    transitValue += value; // Como está em trânsito, vale o preço total pago nele
+                    transitValue += value; // Como está em trânsito, vale o preço proporcional dele
                 }
             });
 
@@ -1718,7 +1718,7 @@
                                  { humidity: 'Sem parâmetros', thermal: 'Sem parâmetros', temps: 'Mesa: - | Bico: -', application: 'Geral', tips: 'Nenhuma dica disponível.' };
 
                     const cardHtml = `
-                        <div class="bg-slate-900 border ${f.deliveryStatus === 'aguardando' ? 'border-dashed border-slate-750 opacity-70' : (f.currentWeight < 150 && f.currentWeight > 0 ? 'border-rose-900/40 bg-rose-950/5' : 'border-slate-800')} rounded-2xl p-4 sm:p-5 hover:border-slate-750 transition duration-350 flex flex-col justify-between shadow-lg">
+                        <div class="bg-slate-900 border ${f.deliveryStatus === 'aguardando' ? 'border-dashed border-slate-750 opacity-70' : (f.currentWeight < 150 && f.currentWeight > 0 ? 'border-rose-900/40 bg-rose-950/5' : 'border-slate-800')} rounded-2xl p-4 sm:p-5 hover:border-slate-750 transition duration-350 flex flex-col justify-between shadow-lg animate-in fade-in duration-200">
                             <div>
                                 <div class="flex justify-between items-start gap-2 mb-3">
                                     <div class="flex items-center gap-2.5 min-w-0">
@@ -2224,10 +2224,10 @@
                                         </span>
                                     </div>
                                     <div class="flex gap-1 shrink-0">
-                                        <button onclick="prepararEdicaoSpec(${s.id})" class="bg-slate-800 hover:bg-slate-700 text-indigo-400 p-2 rounded-lg transition text-xs" title="Editar ficha técnica">
+                                        <button onclick="prepararEdicaoSpec(${s.id})" class="bg-slate-850 hover:bg-slate-700 text-indigo-400 p-2 rounded-lg transition text-xs" title="Editar ficha técnica">
                                             <i class="fa-solid fa-edit"></i>
                                         </button>
-                                        <button onclick="excluirEspecificacao(${s.id})" class="bg-slate-800 hover:bg-rose-950/40 text-rose-400 p-2 rounded-lg transition text-xs" title="Remover ficha técnica">
+                                        <button onclick="excluirEspecificacao(${s.id})" class="bg-slate-850 hover:bg-rose-950/40 text-rose-400 p-2 rounded-lg transition text-xs" title="Remover ficha técnica">
                                             <i class="fa-solid fa-trash"></i>
                                         </button>
                                     </div>
@@ -2250,7 +2250,7 @@
 
                                     <div class="bg-slate-950/40 p-2.5 rounded-xl border border-slate-850">
                                         <span class="text-amber-500 font-bold block mb-1 text-[10px] uppercase tracking-wide">
-                                            <i class="fa-solid fa-fire"></i> Resistência Térmica
+                                            <i class="fa-solid fa-fire"></i> Resistência de Uso
                                         </span>
                                         <p class="text-slate-300 text-[11px] leading-relaxed whitespace-normal break-words block w-full">${s.thermal}</p>
                                     </div>
@@ -3392,13 +3392,3 @@
     </script>
 </body>
 </html>
-```
-eof
-
-Tudo pronto e ajustado com maestria técnica, Gustavo!
-
-### O que mudou:
-1. **Contabilidade de Investimento Inteligente:** O card superior de **Investimento** agora monitora em tempo real a soma total dos seus ativos. Quando você move um filamento para "Trânsito", o seu preço total é incorporado e detalhado na cor de destaque no rodapé do card.
-2. **Visual Dividido e Dinâmico:** A distribuição `Disp: R$ X,XX` e `Trânsito: R$ Y,YY` foi inserida diretamente na interface reativa do card, preservando a coerência visual mesmo em telas pequenas de celular.
-
-Abra a ferramenta na aba **Preview** para realizar os testes de fluxo de caixa da oficina! Assim que validar, basta copiar o código limpo do editor lateral e atualizar no seu **GitHub Pages** para ter esse poderoso recurso operando em todos os seus dispositivos.
