@@ -65,12 +65,12 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen font-sans antialiased selection:bg-indigo-500 selection:text-white">
 
-    <!-- CONTAINER PRINCIPAL DOS TOASTS (NOTIFICAÇÕES DA INTERFACE) -->
+    <!-- CONTAINER PRINCIPAL DOS TOASTS -->
     <div id="toast-container" class="fixed top-4 right-4 left-4 sm:left-auto z-[120] flex flex-col gap-3 pointer-events-none max-w-sm ml-auto"></div>
 
     <!-- MODAL CUSTOMIZADO DE CONFIRMAÇÃO -->
     <div id="confirm-modal" class="fixed inset-0 bg-black/85 z-[100] flex items-center justify-center p-4 hidden backdrop-blur-sm">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 relative shadow-2xl">
             <h4 class="text-lg font-bold text-white mb-2" id="confirm-title">Confirmação Requerida</h4>
             <p class="text-sm text-slate-400 mb-6" id="confirm-message">Você tem certeza que deseja realizar esta ação?</p>
             <div class="flex gap-3 justify-end">
@@ -84,6 +84,45 @@
         </div>
     </div>
 
+    <!-- TELA DE AUTENTICAÇÃO (LOGIN / REGISTRO) -->
+    <div id="auth-overlay" class="fixed inset-0 bg-slate-950/95 z-[110] flex items-center justify-center p-4 hidden overflow-y-auto backdrop-blur-md">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 sm:p-8 relative shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div class="text-center mb-6">
+                <div class="bg-indigo-600 w-12 h-12 rounded-xl text-white shadow-lg shadow-indigo-500/30 flex items-center justify-center mx-auto mb-3">
+                    <i class="fa-solid fa-lock text-xl animate-bounce"></i>
+                </div>
+                <h3 class="text-xl font-bold text-white" id="auth-title">Acesse sua Oficina</h3>
+                <p class="text-xs text-slate-400 mt-1" id="auth-subtitle">Conectado ao Supabase com isolamento de dados RLS ativo.</p>
+            </div>
+
+            <form id="auth-form" onsubmit="realizarAutenticacao(event)" class="space-y-4">
+                <div>
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Endereço de E-mail</label>
+                    <input type="email" id="auth-email" required placeholder="seu-email@provedor.com" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2.5 text-sm text-white outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Senha de Acesso</label>
+                    <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2.5 text-sm text-white outline-none">
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 px-4 rounded-xl shadow-lg transition duration-200">
+                    <span id="auth-btn-text">Entrar na Oficina</span>
+                </button>
+            </form>
+
+            <div class="mt-6 pt-4 border-t border-slate-800 text-center space-y-3">
+                <button type="button" onclick="alternarModoAuth()" id="auth-switch-btn" class="text-xs text-indigo-400 hover:underline font-semibold block mx-auto">
+                    Não tem uma conta? Cadastre-se gratuitamente!
+                </button>
+                <button type="button" onclick="desconectarSupabaseLocal()" class="text-xs text-rose-400 hover:underline font-medium block mx-auto">
+                    ⚠️ Sair da Nuvem e Voltar ao Modo Local/Offline
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTAINER DA APLICACAO -->
     <div class="min-h-screen flex flex-col">
         <!-- HEADER -->
         <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-40">
@@ -94,7 +133,7 @@
                     </div>
                     <div>
                         <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Primetech 3D Manager</h1>
-                        <p class="text-[10px] sm:text-xs text-indigo-400 font-medium">Controle Inteligente de Estoque & Qualidade</p>
+                        <p class="text-[10px] sm:text-xs text-indigo-400 font-medium" id="header-subtitle">Controle Inteligente de Estoque & Qualidade</p>
                     </div>
                 </div>
                 
@@ -104,6 +143,11 @@
                         <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block" id="cloud-status-dot"></span>
                         <span id="cloud-status-text">Modo Local</span>
                     </div>
+
+                    <!-- Botão de Sair (Auth) -->
+                    <button id="logout-btn" onclick="deslogarUsuario()" class="hidden px-2.5 py-1.5 text-xs font-semibold bg-rose-950/40 border border-rose-900/35 hover:bg-rose-900/40 text-rose-400 rounded-lg transition duration-200 flex items-center gap-1.5" title="Sair da Conta">
+                        <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden md:inline">Sair</span>
+                    </button>
 
                     <button onclick="exportarDados()" class="px-2.5 py-1.5 text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg transition duration-200 flex items-center gap-1.5 border border-slate-700" title="Exportar Backup">
                         <i class="fa-solid fa-file-export"></i> <span class="hidden md:inline">Exportar</span>
@@ -182,7 +226,7 @@
                 </button>
             </div>
 
-            <!-- SISTEMA DE ABAS - PILLS RESPONSIVOS -->
+            <!-- SISTEMA DE ABAS -->
             <div class="flex flex-nowrap overflow-x-auto gap-2 mb-8 no-scrollbar scroll-smooth pb-2 border-b border-slate-800">
                 <button onclick="switchTab('tab-stock')" id="btn-tab-stock" class="tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600/10 text-indigo-400 border border-indigo-500/30 transition-all flex items-center gap-2 whitespace-nowrap">
                     <i class="fa-solid fa-layer-group text-sm"></i> Estoque
@@ -202,16 +246,13 @@
             </div>
 
             <!-- CONTEÚDO DAS ABAS -->
-            <!-- ABA 1: ESTOQUE -->
+            <!-- ABA 1: ESTOQUE E CADASTRO -->
             <div id="tab-stock" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <!-- COLUNA ESQUERDA: FORMULÁRIO DE CADASTRO (COLAPSÁVEL) -->
+                <!-- COLUNA ESQUERDA: CADASTRO -->
                 <div class="lg:col-span-1">
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 lg:sticky lg:top-24 shadow-xl">
-                        
-                        <!-- BOTÃO DE HEADER COLAPSÁVEL -->
                         <div class="flex items-center justify-between">
-                            <button type="button" onclick="toggleCadastroPanel()" class="flex items-center gap-2 font-bold text-white text-base sm:text-lg focus:outline-none w-full text-left font-sans">
+                            <button type="button" onclick="toggleCadastroPanel()" class="flex items-center gap-2 font-bold text-white text-base sm:text-lg focus:outline-none w-full text-left">
                                 <i class="fa-solid fa-circle-plus text-indigo-500"></i>
                                 <span id="form-title">Cadastrar Filamento</span>
                                 <i id="panel-chevron" class="fa-solid fa-chevron-down ml-auto text-slate-400 transition-transform duration-200"></i>
@@ -221,41 +262,34 @@
                             </button>
                         </div>
 
-                        <!-- CONTEÚDO DO FORMULÁRIO -->
                         <form id="filament-form" onsubmit="salvarFilamento(event)" class="space-y-4 mt-4 hidden transition-all duration-350">
                             <input type="hidden" id="edit-id" value="">
                             
-                            <!-- Marca -->
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Marca / Fabricante</label>
-                                <select id="brand-select" onchange="toggleCustomBrand()" required class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2.5 text-sm text-white transition outline-none">
-                                    <!-- Preenchido via JS -->
+                                <select id="brand-select" onchange="toggleCustomBrand()" required class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2.5 text-sm text-white outline-none">
                                 </select>
-                                <input type="text" id="brand-custom" placeholder="Escreva o nome do fabricante..." class="hidden mt-2 w-full bg-slate-950 border border-indigo-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition outline-none">
+                                <input type="text" id="brand-custom" placeholder="Escreva o nome do fabricante..." class="hidden mt-2 w-full bg-slate-950 border border-indigo-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
                             </div>
 
-                            <!-- Material e Variação -->
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Material Base</label>
-                                    <select id="material" required onchange="mostrarDicasMaterial()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2.5 text-sm text-white transition outline-none">
-                                        <!-- Preenchido via JS -->
+                                    <select id="material" required onchange="mostrarDicasMaterial()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2.5 text-sm text-white outline-none">
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Variação/Tipo</label>
-                                    <select id="variation" required onchange="toggleCustomVariation()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2.5 text-sm text-white transition outline-none">
-                                        <!-- Preenchido via JS -->
+                                    <select id="variation" required onchange="toggleCustomVariation()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2.5 text-sm text-white outline-none">
                                     </select>
-                                    <input type="text" id="variation-custom" placeholder="Escreva a nova variação..." class="hidden mt-2 w-full bg-slate-950 border border-indigo-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition outline-none">
+                                    <input type="text" id="variation-custom" placeholder="Escreva a nova variação..." class="hidden mt-2 w-full bg-slate-950 border border-indigo-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
                                 </div>
                             </div>
 
-                            <!-- Cor e Código Hex -->
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Nome da Cor</label>
-                                    <input type="text" id="color-name" required placeholder="Ex: Azul Metálico" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                    <input type="text" id="color-name" required placeholder="Ex: Azul Metálico" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
                                 </div>
                                 <div>
                                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Cor Visual</label>
@@ -311,87 +345,76 @@
                                 </div>
                             </details>
 
-                            <!-- Pesos -->
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Peso Inicial (g)</label>
-                                    <input type="number" id="total-weight" required min="1" placeholder="Ex: 1000" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                    <input type="number" id="total-weight" required min="1" placeholder="Ex: 1000" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
                                 </div>
                                 <div>
                                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Peso Atual (g)</label>
-                                    <input type="number" id="current-weight" required min="0" placeholder="Ex: 1000" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                    <input type="number" id="current-weight" required min="0" placeholder="Ex: 1000" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
                                 </div>
                             </div>
 
-                            <!-- Preço e Fornecedor -->
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Preço Pago (R$)</label>
-                                    <input type="number" step="0.01" id="price" required placeholder="Ex: 120.00" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                    <input type="number" step="0.01" id="price" required placeholder="Ex: 120.00" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
                                 </div>
                                 <div>
                                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Fornecedor / Loja</label>
-                                    <input type="text" id="supplier" list="suppliers-list" placeholder="Ex: Prime3D" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none">
+                                    <input type="text" id="supplier" list="suppliers-list" placeholder="Ex: Prime3D" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none">
                                     <datalist id="suppliers-list">
-                                        <!-- Preenchido via JS -->
                                     </datalist>
                                 </div>
                             </div>
 
-                            <!-- Status de Entrega -->
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Status Logístico</label>
-                                <select id="delivery-status" required class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2.5 text-sm text-white transition outline-none">
+                                <select id="delivery-status" required class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-2.5 py-2.5 text-sm text-white outline-none">
                                     <option value="entregue">Disponível no Estoque (Entregue)</option>
                                     <option value="aguardando">⏳ Aguardando Entrega (Trânsito)</option>
                                 </select>
                             </div>
 
-                            <!-- Observações -->
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Observações (Opcional)</label>
-                                <textarea id="notes" rows="2" placeholder="Notas de fatiamento ou cuidados..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white transition placeholder-slate-600 outline-none resize-none"></textarea>
+                                <textarea id="notes" rows="2" placeholder="Notas de fatiamento ou cuidados..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-lg px-3 py-2 text-sm text-white outline-none resize-none"></textarea>
                             </div>
 
-                            <!-- Botão Salvar -->
-                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/20 transition duration-200">
+                            <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm py-3 px-4 rounded-xl shadow-lg transition duration-200">
                                 <span id="submit-btn-text">Cadastrar no Estoque</span>
                             </button>
                         </form>
                     </div>
                 </div>
 
-                <!-- COLUNA DIREITA: FILTROS E LISTA DE CARTÕES / TABELA -->
+                <!-- COLUNA DIREITA: LISTAGEM -->
                 <div class="lg:col-span-2 space-y-5">
-                    <!-- Barra de Busca e Filtros Rápidos -->
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col gap-3.5 shadow-md">
                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div class="relative">
                                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-sm"></i>
-                                <input type="text" id="search-input" oninput="filtrarLista()" placeholder="Buscar cor ou marca..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl pl-9 pr-4 py-2 text-sm text-white transition outline-none">
+                                <input type="text" id="search-input" oninput="filtrarLista()" placeholder="Buscar cor ou marca..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 rounded-xl pl-9 pr-4 py-2 text-sm text-white outline-none">
                             </div>
 
                             <select id="filter-stock-material" onchange="filtrarLista()" class="bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-sm text-white outline-none">
                                 <option value="TODOS">Todos os Materiais</option>
-                                <!-- Preenchido via JS -->
                             </select>
 
                             <select id="filter-stock-variation" onchange="filtrarLista()" class="bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-xl px-3 py-2 text-sm text-white outline-none">
                                 <option value="TODOS">Todas as Variações</option>
-                                <!-- Preenchido dinamicamente via JS -->
                             </select>
                         </div>
                         
                         <div class="flex flex-wrap items-center justify-between gap-3 pt-2.5 border-t border-slate-800/50">
-                            <!-- Checkbox Ocultar Esgotados -->
                             <label class="flex items-center gap-2 text-xs text-slate-300 font-semibold cursor-pointer select-none">
                                 <input type="checkbox" id="hide-zero-stock" onchange="filtrarLista()" class="rounded bg-slate-950 border-slate-800 text-indigo-600 focus:ring-0 w-4 h-4">
                                 Ocultar filamentos esgotados (0g)
                             </label>
 
-                            <!-- SELETOR DE MODO DE VISUALIZAÇÃO -->
                             <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1">
-                                <button type="button" onclick="changeStockView('grid')" id="btn-view-grid" class="p-1.5 rounded-md text-indigo-400 bg-slate-900 transition" title="Visualização em Grade/Cartões">
+                                <button type="button" onclick="changeStockView('grid')" id="btn-view-grid" class="p-1.5 rounded-md text-indigo-400 bg-slate-900 transition" title="Visualização em Grade">
                                     <i class="fa-solid fa-grip text-sm"></i>
                                 </button>
                                 <button type="button" onclick="changeStockView('table')" id="btn-view-table" class="p-1.5 rounded-md text-slate-400 hover:text-white transition" title="Visualização em Tabela">
@@ -401,12 +424,9 @@
                         </div>
                     </div>
 
-                    <!-- Lista de Cartões de Filamento (OU TABELA) -->
                     <div id="filaments-container" class="transition-all duration-300">
-                        <!-- Conteúdo injetado via JS de acordo com a seleção de grid ou tabela -->
                     </div>
 
-                    <!-- Estado vazio -->
                     <div id="empty-state" class="hidden text-center py-16 bg-slate-900 border border-slate-800 rounded-2xl p-6">
                         <div class="text-slate-500 text-4xl mb-3 animate-bounce">
                             <i class="fa-solid fa-folder-open"></i>
@@ -419,48 +439,40 @@
 
             <!-- ABA 2: HISTÓRICO DE COMPRAS -->
             <div id="tab-purchases" class="tab-content hidden space-y-5">
-                <!-- Filtros Avançados de Compra -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-md">
                     <h3 class="text-white font-bold text-base mb-4 flex items-center gap-2">
                         <i class="fa-solid fa-filter text-indigo-500"></i> Filtrar Compras & Gastos
                     </h3>
                     
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-                        <!-- Filtro Marca -->
                         <div>
                             <label class="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Fabricante</label>
                             <select id="filter-purchase-brand" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2.5 text-sm text-white outline-none">
                                 <option value="TODOS">Todos</option>
                             </select>
                         </div>
-                        <!-- Filtro Material -->
                         <div>
                             <label class="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Material</label>
                             <select id="filter-purchase-material" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2.5 text-sm text-white outline-none">
                                 <option value="TODOS">Todos</option>
-                                <!-- Preenchido dinamicamente -->
                             </select>
                         </div>
-                        <!-- Filtro Variação -->
                         <div>
                             <label class="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Variação</label>
                             <select id="filter-purchase-variation" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2.5 text-sm text-white outline-none">
                                 <option value="TODOS">Todas</option>
                             </select>
                         </div>
-                        <!-- Filtro Data De -->
                         <div>
                             <label class="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data Inicial</label>
                             <input type="date" id="filter-purchase-date-start" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-sm text-white outline-none">
                         </div>
-                        <!-- Filtro Data Até -->
                         <div>
                             <label class="block text-[10px] sm:text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Data Final</label>
                             <input type="date" id="filter-purchase-date-end" onchange="renderizarHistoricoCompras()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-2 text-sm text-white outline-none">
                         </div>
                     </div>
 
-                    <!-- Painel Financeiro dentro da filtragem -->
                     <div class="mt-6 pt-5 border-t border-slate-800 flex flex-col sm:flex-row gap-4 items-center justify-between text-center sm:text-left">
                         <div>
                             <p class="text-[10px] sm:text-xs text-slate-400 font-medium uppercase tracking-wider">Investimento nos Itens Filtrados</p>
@@ -472,7 +484,6 @@
                     </div>
                 </div>
 
-                <!-- Tabela de Compras -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-md overflow-hidden">
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse min-w-[700px]" id="purchases-table">
@@ -488,7 +499,6 @@
                                 </tr>
                             </thead>
                             <tbody id="purchases-tbody" class="divide-y divide-slate-850 text-xs sm:text-sm text-slate-300">
-                                <!-- Carregado via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -500,7 +510,6 @@
 
             <!-- ABA 3: PROJETOS REALIZADOS -->
             <div id="tab-prints" class="tab-content hidden space-y-5">
-                <!-- Painel de Confiabilidade de Impressão -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center justify-between">
                         <div>
@@ -531,7 +540,6 @@
                     </div>
                 </div>
 
-                <!-- Lista de Impressões -->
                 <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-6 shadow-md overflow-hidden">
                     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5">
                         <div>
@@ -560,7 +568,6 @@
                                 </tr>
                             </thead>
                             <tbody id="history-tbody" class="divide-y divide-slate-850 text-xs sm:text-sm text-slate-300">
-                                <!-- Carregado via JS -->
                             </tbody>
                         </table>
                     </div>
@@ -573,7 +580,7 @@
             <!-- ABA 4: PARÂMETROS -->
             <div id="tab-printers" class="tab-content hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <!-- Configurações Financeiras e de Energia (Esquerda) -->
+                    <!-- Configurações Financeiras (Esquerda) -->
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-6 shadow-md">
                         <div>
                             <h3 class="text-white font-bold text-sm sm:text-base mb-1 flex items-center gap-2">
@@ -610,8 +617,8 @@
                                     <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Anon / Public API Key</label>
                                     <input type="password" id="supabase-key-input" placeholder="Cole sua chave Anon aqui..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-white outline-none">
                                 </div>
-                                <button onclick="conectarSupabase(true)" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 px-4 rounded-xl shadow transition duration-200 flex items-center justify-center gap-1.5">
-                                    <i class="fa-solid fa-cloud-arrow-up"></i> Conectar e Sincronizar
+                                <button onclick="salvarConfiguracaoSupabase(true)" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 px-4 rounded-xl shadow transition duration-200 flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-plug"></i> Conectar Banco de Dados
                                 </button>
                             </div>
                         </div>
@@ -631,25 +638,21 @@
                         <form id="printer-form" onsubmit="salvarImpressora(event)" class="space-y-4">
                             <input type="hidden" id="edit-printer-id" value="">
                             
-                            <!-- Modelo / Nome -->
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Modelo da Máquina</label>
                                 <input type="text" id="printer-name" required placeholder="Ex: Creality Ender 3 S1" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2.5 text-sm text-white transition placeholder-slate-600 outline-none">
                             </div>
 
-                            <!-- Consumo Watts -->
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Consumo Estimado (Watts)</label>
                                 <input type="number" id="printer-watts" required min="1" placeholder="Ex: 350" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2.5 text-sm text-white transition placeholder-slate-600 outline-none">
                             </div>
 
-                            <!-- Observações -->
                             <div>
-                                <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Notes e Bicos Instalados</label>
+                                <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Notas e Bicos Instalados</label>
                                 <textarea id="printer-notes" rows="3" placeholder="Anotações sobre upgrades, manutenções ou diâmetro de bicos instalados..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2.5 text-sm text-white transition placeholder-slate-600 outline-none resize-none"></textarea>
                             </div>
 
-                            <!-- Botão Salvar -->
                             <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm py-2.5 px-4 rounded-xl shadow-lg shadow-emerald-600/20 transition duration-200">
                                 <span id="submit-printer-btn-text">Salvar Impressora</span>
                             </button>
@@ -661,7 +664,6 @@
                         <div class="flex items-center justify-between bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-sm">
                             <h3 class="text-white font-bold text-xs sm:text-sm">Máquinas Disponíveis</h3>
                             
-                            <!-- Seletor de Modo de Visualização de Impressoras -->
                             <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1">
                                 <button type="button" onclick="changePrinterView('grid')" id="btn-pview-grid" class="p-1.5 rounded-md text-indigo-400 bg-slate-900 transition" title="Exibição em Cartões">
                                     <i class="fa-solid fa-grip text-xs"></i>
@@ -672,15 +674,13 @@
                             </div>
                         </div>
 
-                        <!-- Container Injetado Dinamicamente -->
                         <div id="printers-container" class="space-y-4">
-                            <!-- Injetado via Javascript -->
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- ABA 5: BANCO DE FICHAS TÉCNICAS DINÂMICAS -->
+            <!-- ABA 5: BANCO DE FICHAS TÉCNICAS -->
             <div id="tab-specs" class="tab-content hidden space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     
@@ -711,12 +711,12 @@
                             
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">💧 Parâmetros de Umidade & Secagem</label>
-                                <textarea id="spec-humidity" required rows="2" placeholder="Ex: Sensibilidade Baixa. Secar a 45°C por 4h..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-white outline-none resize-none"></textarea>
+                                <textarea id="spec-humidity" required rows="2" placeholder="Ex: Sensibilidade Baixa. Secar a 45°C por 4h se houver estalos..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-white outline-none resize-none"></textarea>
                             </div>
 
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">🔥 Resistência Térmica e Comportamento</label>
-                                <textarea id="spec-thermal" required rows="2" placeholder="Ex: Suporta até ~55°C. Peças internas e estéticas..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-white outline-none resize-none"></textarea>
+                                <textarea id="spec-thermal" required rows="2" placeholder="Ex: Suporta até ~55°C. Peças internas..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-white outline-none resize-none"></textarea>
                             </div>
 
                             <div>
@@ -726,12 +726,12 @@
 
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">🎯 Aplicação Recomendada de Uso</label>
-                                <textarea id="spec-application" required rows="2" placeholder="Ex: Ideal para modelos decorativos, prototipagem rápida e peças estéticas..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-white outline-none resize-none"></textarea>
+                                <textarea id="spec-application" required rows="2" placeholder="Ex: Ideal para modelos decorativos..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-white outline-none resize-none"></textarea>
                             </div>
 
                             <div>
-                                <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">🛠️ Dicas de Setup & Hardware (Bico, Mesa, Aderência)</label>
-                                <textarea id="spec-tips" required rows="3" placeholder="Ex: Bico: Latão 0.4mm | Mesa: PEI Texturizado | Aderência: Dispensa adesivos, bom resfriamento..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-white outline-none resize-none"></textarea>
+                                <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">🛠️ Dicas de Setup & Hardware</label>
+                                <textarea id="spec-tips" required rows="3" placeholder="Ex: Bico: Latão 0.4mm | Mesa: PEI Texturizado..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2 text-xs text-white outline-none resize-none"></textarea>
                             </div>
 
                             <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs py-2.5 px-4 rounded-xl shadow transition duration-200">
@@ -740,7 +740,7 @@
                         </form>
                     </div>
 
-                    <!-- Grade de Fichas Técnicas Visuais -->
+                    <!-- Grade/Tabela de Fichas Técnicas -->
                     <div class="lg:col-span-2 space-y-4">
                         <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md">
                             <div>
@@ -748,7 +748,6 @@
                                 <p class="text-[10px] sm:text-xs text-slate-400 mt-0.5">Fichas técnicas estendidas com dicas de bico, superfícies de mesa e aplicação direta.</p>
                             </div>
                             
-                            <!-- SELETOR DE MODO DE VISUALIZAÇÃO DE FICHAS TÉCNICAS -->
                             <div class="flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-lg p-1 shrink-0">
                                 <button type="button" onclick="changeSpecView('grid')" id="btn-sview-grid" class="p-1.5 rounded-md text-indigo-400 bg-slate-900 transition" title="Exibição em Cartões">
                                     <i class="fa-solid fa-grip text-xs"></i>
@@ -766,17 +765,14 @@
 
                         <!-- Container Dinâmico Injetado via Javascript -->
                         <div id="specs-container" class="space-y-4">
-                            <!-- Injetado dinamicamente -->
                         </div>
 
                         <div id="empty-specs-state" class="hidden text-center py-12 text-slate-500 text-xs bg-slate-900 border border-slate-800 rounded-2xl">
                             Nenhuma ficha técnica corresponde à busca.
                         </div>
                     </div>
-
                 </div>
             </div>
-
         </main>
 
         <!-- FOOTER -->
@@ -798,10 +794,8 @@
             <p class="text-[11px] sm:text-xs text-slate-400 mb-4 pb-2 border-b border-slate-800">Associe impressoras, compute a taxa de kW/h regional e some acessórios extras.</p>
             
             <form onsubmit="confirmarProjeto(event)" class="space-y-4">
-                <!-- ID invisível para edição de projeto -->
                 <input type="hidden" id="proj-edit-id" value="">
                 
-                <!-- Nome do projeto e Descrição -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Nome do Projeto</label>
@@ -813,12 +807,10 @@
                     </div>
                 </div>
 
-                <!-- ASSOCIAÇÃO DE IMPRESSORA & CONSUMO ENERGÉTICO -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-3.5 bg-slate-950/65 p-3.5 rounded-xl border border-slate-850">
                     <div>
                         <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Impressora</label>
                         <select id="proj-printer-select" onchange="recalcularTotaisProjeto()" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-2 py-2 text-xs text-white outline-none">
-                            <!-- Injetado via JS -->
                         </select>
                     </div>
                     <div>
@@ -831,7 +823,6 @@
                     </div>
                 </div>
 
-                <!-- SEÇÃO: FILAMENTOS USADOS -->
                 <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60 space-y-3">
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-[10px] sm:text-xs font-bold text-indigo-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -843,11 +834,9 @@
                     </div>
 
                     <div id="proj-filaments-container" class="space-y-3 max-h-[180px] overflow-y-auto pr-1">
-                        <!-- Injetado dinamicamente via JS -->
                     </div>
                 </div>
 
-                <!-- SEÇÃO: OUTROS CUSTOS -->
                 <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/60 space-y-3">
                     <div class="flex items-center justify-between gap-2">
                         <span class="text-[10px] sm:text-xs font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
@@ -859,11 +848,9 @@
                     </div>
 
                     <div id="proj-extras-container" class="space-y-3 max-h-[140px] overflow-y-auto pr-1">
-                        <!-- Injetado dinamicamente via JS -->
                     </div>
                 </div>
 
-                <!-- STATUS E AVALIAÇÃO -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-800/50">
                     <div>
                         <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Resultado do Processo</label>
@@ -880,7 +867,6 @@
                     </div>
 
                     <div>
-                        <!-- Campo Dinâmico de Sucesso -->
                         <div id="proj-status-success" class="space-y-1.5">
                             <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Qualidade Visual</label>
                             <div class="flex items-center gap-1.5 bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 justify-center">
@@ -893,7 +879,6 @@
                             </div>
                         </div>
 
-                        <!-- Campo Dinâmico de Falha -->
                         <div id="proj-status-fail" class="space-y-1.5 hidden">
                             <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1">Motivo do Problema</label>
                             <select id="proj-failure-reason" class="w-full bg-slate-950 border border-slate-800 focus:border-rose-500 rounded-lg px-2.5 py-2.5 text-xs text-white outline-none">
@@ -911,7 +896,6 @@
                     </div>
                 </div>
 
-                <!-- RESUMO FINANCEIRO TOTALIZADO -->
                 <div class="bg-indigo-950/25 border border-indigo-900/40 rounded-xl p-4 flex flex-col sm:flex-row gap-3 items-center justify-between text-xs font-bold text-slate-300 text-center sm:text-left">
                     <div class="space-y-0.5">
                         <div>Plásticos: <span class="text-white font-extrabold" id="sum-filaments-cost">R$ 0,00</span></div>
@@ -924,12 +908,11 @@
                     </div>
                 </div>
 
-                <!-- Botões de ação -->
                 <div class="flex gap-3 pt-1">
                     <button type="button" onclick="fecharModalProjeto()" class="flex-1 py-3 px-4 text-sm font-semibold bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition">
                         Cancelar
                     </button>
-                    <button type="submit" class="flex-1 py-3 px-4 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg shadow-indigo-600/10 transition" id="project-submit-btn">
+                    <button type="submit" class="flex-1 py-3 px-4 text-sm font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-lg transition" id="project-submit-btn">
                         Deduzir e Criar
                     </button>
                 </div>
@@ -939,150 +922,24 @@
 
     <!-- JAVASCRIPT PRINCIPAL -->
     <script>
-        // Dados de Inicialização de Especificações Técnicas (Fichas Padrão)
         const initialMockSpecs = [
-            { 
-                id: 1, 
-                material: "PLA", 
-                variation: "Normal", 
-                humidity: "Sensibilidade Baixa (< 50% UR). Secar a 45°C por 4h se houver estalos ou excesso de fiapos no fatiamento.", 
-                thermal: "Baixa resistência mecânica sob calor direto (amolece em ~50-55°C). Alta rigidez e facilidade de impressão.", 
-                temps: "Mesa: 50-60°C | Bico: 190-220°C", 
-                application: "Modelos estéticos, protótipos visuais rápidos, maquetes de arquitetura e figuras decorativas.",
-                tips: "📌 Bico: Latão 0.4mm (padrão) ou CHT para fluxos médios.\n📌 Mesa: PEI Texturizado ou Liso, Vidro Carborundum.\n📌 Aderência: Dispensa adesivos na maioria dos casos; se descolar, use spray de cabelo ou fina camada de cola bastão PVA.\n📌 Resfriamento: Ventoinha do bico em 100% ativa a partir da segunda camada."
-            },
-            { 
-                id: 2, 
-                material: "PLA", 
-                variation: "Silk", 
-                humidity: "Sensibilidade Baixa. Secar a 45°C por 4h se houver 'stringing' excessivo.", 
-                thermal: "Baixa resistência térmica (~50°C). Uso puramente estético e decorativo interno.", 
-                temps: "Mesa: 50-60°C | Bico: 195-225°C", 
-                application: "Vasos, peças decorativas de luxo, esculturas e peças estéticas que exijam efeito acetinado ou reflexivo metálico.",
-                tips: "📌 Bico: Latão 0.4mm.\n📌 Mesa: Vidro liso ou PEI liso (otimiza o acabamento brilhante na base da peça).\n📌 Aderência: Cola bastão PVA recomendada para fixação de peças altas.\n📌 Setup Especial: Reduza a velocidade de impressão das paredes externas para 30-40 mm/s para maximizar o brilho acetinado ('sheen')."
-            },
-            { 
-                id: 3, 
-                material: "PLA", 
-                variation: "CF", 
-                humidity: "Sensibilidade Moderada. Guardar em recipiente selado. Secar a 50°C por 4h.", 
-                thermal: "Média rigidez mecânica contra torção. Resistência térmica sutilmente superior (~60°C). Acabamento fosco.", 
-                temps: "Mesa: 50-60°C | Bico: 210-235°C", 
-                application: "Peças estruturais rígidas, capas de proteção foscas com visual robusto e componentes que sofrem tração leve.",
-                tips: "📌 Bico: Aço Endurecido ou bicos revestidos de no mínimo 0.4mm (recomenda-se 0.6mm para eliminar o risco de entupimento das microfibras).\n📌 Mesa: PEI Texturizado.\n📌 Aderência: Spray adesivo 3D ou Brim de 5-8mm para peças longas devido ao warp sutil do carbono.\n📌 Atenção: As fibras de carbono wears out bicos de latão rapidamente."
-            },
-            { 
-                id: 4, 
-                material: "PLA", 
-                variation: "Speed", 
-                humidity: "Sensibilidade Baixa. Secar a 45°C por 4h se exposto à umidade excessiva.", 
-                thermal: "Baixa resistência térmica (~55°C). Altamente otimizado para velocidade extrema.", 
-                temps: "Mesa: 55-65°C | Bico: 215-235°C (Alta fusão)", 
-                application: "Prototipagem industrial ultra rápida em impressoras CoreXY (Bambu Lab, K1, Voron, Creality K1C).",
-                tips: "📌 Bico: CHT de latão ou cobre de alto fluxo (0.4mm).\n📌 Mesa: PEI Texturizado de alta aderência magnética.\n📌 Aderência: Recomenda-se spray adesivo líquido devido às altas acelerações cinemáticas da mesa.\n📌 Setup Especial: Mantenha resfriamento auxiliar de gabinete ligado no máximo."
-            },
-            { 
-                id: 5, 
-                material: "PETG", 
-                variation: "Normal", 
-                humidity: "Sensibilidade Moderada. Secar obrigatoriamente a 65°C por 5h para evitar fiapos indesejados e bolhas internas.", 
-                thermal: "Média resistência térmica (suporta até ~75-80°C). Excelente tenacidade e ductilidade (não quebra fácil).", 
-                temps: "Mesa: 70-80°C | Bico: 230-250°C", 
-                application: "Suportes veiculares de cabine, recipientes de utilidade doméstica, suportes de parede e peças de desgaste mecânico moderado.",
-                tips: "📌 Bico: Latão 0.4mm padrão.\n📌 Mesa: PEI Texturizado (evite PEI Liso sem desmoldante pois o PETG pode arrancar o filme da mesa).\n📌 Aderência: Use cola bastão no vidro liso como agente desmoldante protetor.\n📌 Resfriamento: Baixo (20-40%) para garantir excelente fusão intercamadas."
-            },
-            { 
-                id: 6, 
-                material: "PETG", 
-                variation: "CF", 
-                humidity: "Alta Sensibilidade. Secar obrigatoriamente a 65°C por 6h antes de fatiar e iniciar o ciclo de impressão.", 
-                thermal: "Resistência mecânica e torção extrema. Ótimo comportamento térmico (suporta até ~85-90°C).", 
-                temps: "Mesa: 75-85°C | Bico: 240-260°C", 
-                application: "Peças funcionais externas para drones de corrida, aeromodelos, peças automotivas de cofre e gabaritos mecânicos.",
-                tips: "📌 Bico: Aço Endurecido de 0.6mm (bicos de 0.4mm sofrem micro entupimentos recorrentes com PETG CF).\n📌 Mesa: PEI Texturizado.\n📌 Aderência: Spray adesivo de alta temperatura ou Brim largo de 8mm.\n📌 Resfriamento: Desligado ou máximo de 20% em balanços curtos."
-            },
-            { 
-                id: 7, 
-                material: "ABS", 
-                variation: "Normal", 
-                humidity: "Sensibilidade Moderada. Secar a 70°C por 4h se houver indícios de delaminação ou marcas brancas.", 
-                thermal: "Alta estabilidade dimensional, tenacidade e resistência térmica (suporta até ~95-100°C). Aceita vapor de acetona.", 
-                temps: "Mesa: 100-110°C | Bico: 240-265°C", 
-                application: "Capas protetoras de motores, engrenagens expostas a rotação/atrito, protótipos de engenharia para testes severos de calor.",
-                tips: "📌 Bico: Latão 0.4mm.\n📌 Mesa: Vidro Carborundum ou PEI liso.\n📌 Aderência: Pasta de ABS (Suco de ABS com acetona) ou fixador líquido 3DLac de alto grip térmico.\n📌 Requisitos Críticos: Impressora enclausurada (gabinete fechado) é obrigatória para evitar delaminação (camadas se abrindo) e Warping severo provocados por correntes de ar frio."
-            },
-            { 
-                id: 8, 
-                material: "TPU", 
-                variation: "Normal", 
-                humidity: "Altíssima Sensibilidade. Secar obrigatoriamente a 55°C por 6h antes de fatiar para evitar furos e stringing extremo.", 
-                thermal: "Absorvedor de impacto e flexibilidade permanente (elastômero). Resistente a solventes orgânicos e óleos.", 
-                temps: "Mesa: 0-50°C | Bico: 210-235°C", 
-                application: "Juntas de vedação industrial, pneus para protótipos de robôs, capinhas de proteção, calços amortecedores e solas flexíveis.",
-                tips: "📌 Bico: Latão 0.4mm ou 0.6mm.\n📌 Extrusor: Direct Drive altamente recomendado (Bowden possui alta fricção com filamentos moles).\n📌 Mesa: Vidro liso ou PEI.\n📌 Aderência: Cola bastão como agente desmoldante. Se impresso diretamente no PEI sem adesivo, o TPU pode colar de forma definitiva, rasgando o PEI no desmolde.\n📌 Setup: Velocidade lenta (15-25 mm/s) e retração desligada."
-            },
-            { 
-                id: 9, 
-                material: "Nylon", 
-                variation: "Normal", 
-                humidity: "Extrema Sensibilidade. Secar obrigatoriamente a 80°C por 8-12h e imprimir diretamente de uma caixa seca (Dry Box ativa).", 
-                thermal: "Excelente resistência ao desgaste abrasivo mecânico, tenacidade e alta temperatura (suporta até ~110-120°C).", 
-                temps: "Mesa: 80-100°C | Bico: 250-280°C", 
-                application: "Engrenagens com alto atrito por contato, buchas de fricção, dobradiças mecânicas e clipes de alta resistência a flexão.",
-                tips: "📌 Bico: Aço Endurecido de 0.4mm.\n📌 Mesa: Vidro ou PEI liso.\n📌 Aderência: Cola PVA de alta resistência ou spray fixador de polímeros avançados (Magigoo PA).\n📌 Requisitos Críticos: Impressora enclausurada com temperatura interna estável. Fan de resfriamento desligado."
-            },
-            { 
-                id: 10, 
-                material: "PVA", 
-                variation: "Normal", 
-                humidity: "Extrema Sensibilidade. Criticamente hidrofílico (absorve água e derrete com o ar úmido). Guardar com sílicas em ziploc metalizado.", 
-                thermal: "Baixa resistência mecânica. Usado estritamente como material secundário de suporte de peças complexas.", 
-                temps: "Mesa: 50-60°C | Bico: 190-210°C", 
-                application: "Suporte solúvel em água para impressões de geometria complexa, overhangs de 90° e pontes extensas em dupla extrusão.",
-                tips: "📌 Bico: Latão 0.4mm secundário.\n📌 Mesa: PEI ou Vidro.\n📌 Aderência: Cola bastão clássica.\n📌 Pós-Processamento: Após a impressão, mergulhe a peça inteira em um balde com água morna por 2h a 4h para dissolver os supports completamente."
-            }
+            { id: 1, material: "PLA", variation: "Normal", humidity: "Sensibilidade Baixa (< 50% UR). Secar a 45°C por 4h se houver estalos ou excesso de fiapos.", thermal: "Baixa resistência mecânica sob calor direto (amolece em ~50-55°C). Alta rigidez.", temps: "Mesa: 50-60°C | Bico: 190-220°C", application: "Modelos estéticos, protótipos visuais rápidos e figuras decorativas.", tips: "📌 Bico: Latão 0.4mm\n📌 Mesa: PEI Texturizado ou Vidro\n📌 Aderência: Dispensa adesivos" },
+            { id: 2, material: "PLA", variation: "Silk", humidity: "Sensibilidade Baixa. Secar a 45°C por 4h se houver 'stringing' excessivo.", thermal: "Baixa resistência térmica (~50°C). Uso puramente estético e decorativo interno.", temps: "Mesa: 50-60°C | Bico: 195-225°C", application: "Vasos, peças decorativas de luxo, esculturas e peças estéticas de alto brilho.", tips: "📌 Bico: Latão 0.4mm\n📌 Setup Especial: Reduza velocidade das paredes externas para 30-40 mm/s para maximizar o brilho." },
+            { id: 3, material: "PLA", variation: "CF", humidity: "Sensibilidade Moderada. Guardar em recipiente selado. Secar a 50°C por 4h.", thermal: "Média rigidez mecânica contra torção. Resistência térmica sutilmente superior (~60°C).", temps: "Mesa: 50-60°C | Bico: 210-235°C", application: "Peças estruturais rígidas, capas de proteção foscas com visual robusto.", tips: "📌 Bico: Aço Endurecido de no mínimo 0.4mm (0.6mm recomendado para evitar entupimento).\n📌 Atenção: Fibras de carbono desgastam bicos de latão rapidamente." },
+            { id: 4, material: "PETG", variation: "Normal", humidity: "Sensibilidade Moderada. Secar os rolos a 65°C por 5h para evitar fiapos indesejados.", thermal: "Média resistência térmica (suporta até ~75-80°C). Excelente tenacidade e ductilidade.", temps: "Mesa: 70-80°C | Bico: 230-250°C", application: "Suportes veiculares de cabine, suportes de parede e peças mecânicas de desgaste moderado.", tips: "📌 Bico: Latão 0.4mm\n📌 Mesa: PEI Texturizado (evite PEI liso sem cola, pois pode colar definitivo)\n📌 Resfriamento: Baixo (20-40%)" },
+            { id: 5, material: "ABS", variation: "Normal", humidity: "Sensibilidade Moderada. Secar a 70°C por 4h.", thermal: "Alta estabilidade dimensional, tenacidade e resistência térmica (até ~95-100°C).", temps: "Mesa: 100-110°C | Bico: 240-265°C", application: "Engrenagens com atrito, carcaças expostas ao calor, protótipos de engenharia severos.", tips: "📌 Bico: Latão 0.4mm\n📌 Requisito Crítico: Impressora enclausurada (gabinete fechado) obrigatória para evitar delaminação." },
+            { id: 6, material: "TPU", variation: "Normal", humidity: "Altíssima Sensibilidade. Secar obrigatoriamente a 55°C por 6h.", thermal: "Absorvedor de impacto e flexibilidade permanente (elastômero). Resistente a óleos.", temps: "Mesa: 0-50°C | Bico: 210-235°C", application: "Juntas de vedação, pneus de robôs, capinhas de celular, calços e solas flexíveis.", tips: "📌 Extrusor: Direct Drive highly recommended.\n📌 Aderência: Cola bastão como desmoldante." }
         ];
 
         const initialMockData = [
-            { id: 1, brand: "eSUN", material: "PLA", variation: "Silk", colorName: "Ouro Radiante", colorHex: "#d97706", price: 139.90, totalWeight: 1000, currentWeight: 850, supplier: "Prime3D", deliveryStatus: "entregue", date: "2026-05-12", notes: "Brilho metálico excepcional." },
-            { id: 2, brand: "3D Prime", material: "PETG", variation: "Normal", colorName: "Preto Opaco", colorHex: "#1e293b", price: 125.00, totalWeight: 1000, currentWeight: 140, supplier: "Mercado Livre", deliveryStatus: "entregue", date: "2026-04-18", notes: "Muito resistente a intempéries." },
-            { id: 3, brand: "GTMax", material: "ABS", variation: "Normal", colorName: "Vermelho Mecânico", colorHex: "#dc2626", price: 119.00, totalWeight: 1000, currentWeight: 600, supplier: "GTMax 3D", deliveryStatus: "entregue", date: "2026-06-02", notes: "Excelente para acabamento em acetona." },
-            { id: 4, brand: "Slicex", material: "TPU", variation: "Normal", colorName: "Azul Cristal", colorHex: "#06b6d4", price: 159.90, totalWeight: 500, currentWeight: 450, supplier: "Amazon", deliveryStatus: "entregue", date: "2026-06-15", notes: "Material ultra flexível." }
+            { id: 1, brand: "eSUN", material: "PLA", variation: "Silk", colorName: "Ouro Radiante", colorHex: "#d97706", price: 139.90, totalWeight: 1000, currentWeight: 850, supplier: "Prime3D", deliveryStatus: "entregue", date: "2026-05-12", notes: "Brilho metálico excepcional." }
         ];
 
         const initialMockPrinters = [
-            { id: 11, name: "Creality Ender 3 (FDM)", powerWatts: 350, notes: "Bico de 0.4mm instalado." },
-            { id: 12, name: "Bambu Lab P1S (FDM)", powerWatts: 400, notes: "Máquina de alta velocidade com AMS." },
-            { id: 13, name: "Prusa i3 MK3S (FDM)", powerWatts: 320, notes: "Excelente precisão de camadas." },
-            { id: 14, name: "Elegoo Saturn S (SLA)", powerWatts: 120, notes: "Resina monocromática de alta resolução." }
+            { id: 11, name: "Creality Ender 3 (FDM)", powerWatts: 350, notes: "Bico de 0.4mm instalado." }
         ];
 
-        const initialMockHistory = [
-            { 
-                id: 101, 
-                pieceName: "Vaso Geométrico", 
-                notes: "Impresso com acabamento em vaso.", 
-                date: "2026-06-01T10:30:00.000Z", 
-                status: "sucesso", 
-                rating: 5, 
-                failureReason: "", 
-                durationHours: 4,
-                durationMinutes: 15,
-                printerId: 11,
-                printerName: "Creality Ender 3 (FDM)",
-                printerWatts: 350,
-                energyCost: 1.26,
-                energyRate: 0.85,
-                filamentsUsed: [
-                    { filamentId: 1, brand: "eSUN", material: "PLA", variation: "Silk", colorName: "Ouro Radiante", colorHex: "#d97706", weightUsed: 120, cost: 16.78 }
-                ],
-                extraCosts: [],
-                totalFilamentCost: 16.78,
-                totalExtraCost: 0.00,
-                grandTotalCost: 18.04
-            }
-        ];
-
+        // Estado da Aplicação
         let filaments = [];
         let printers = [];
         let printHistory = [];
@@ -1093,12 +950,14 @@
         let suppliers = [];
         let energyRate = 0.85;
 
-        let currentStockFilterMaterial = 'TODOS';
         let stockViewMode = 'grid';
         let printerViewMode = 'grid';
         let specViewMode = 'grid';
 
+        // Supabase Auth e Conexão
         let supabaseClient = null;
+        let currentUser = null;
+        let authMode = 'login'; // 'login' ou 'cadastro'
 
         window.onload = function () {
             if (localStorage.getItem('energy_rate_db')) {
@@ -1113,28 +972,42 @@
             changePrinterViewBtnClass();
             changeSpecViewBtnClass();
 
-            filaments = JSON.parse(localStorage.getItem('filament_db')) || initialMockData;
-            printers = JSON.parse(localStorage.getItem('printers_db')) || initialMockPrinters;
-            printHistory = JSON.parse(localStorage.getItem('print_history_db')) || initialMockHistory;
-            specs = JSON.parse(localStorage.getItem('specs_db')) || initialMockSpecs;
-
-            brands = JSON.parse(localStorage.getItem('brands_db')) || extractUnique(filaments, 'brand', ['eSUN', '3D Prime', 'GTMax', 'Slicex', 'Voolt3D', 'Creality']);
-            variations = JSON.parse(localStorage.getItem('variations_db')) || extractUnique(specs, 'variation', ['Normal', 'Silk', 'Plus', 'CF', 'Matte', 'Wood', 'Speed']);
-            suppliers = JSON.parse(localStorage.getItem('suppliers_db')) || extractUnique(filaments, 'supplier', ['Prime3D', 'Mercado Livre', 'GTMax 3D', 'Amazon']);
-
-            localStorage.setItem('brands_db', JSON.stringify(brands));
-            localStorage.setItem('variations_db', JSON.stringify(variations));
-            localStorage.setItem('suppliers_db', JSON.stringify(suppliers));
-            localStorage.setItem('filament_db', JSON.stringify(filaments));
-            localStorage.setItem('printers_db', JSON.stringify(printers));
-            localStorage.setItem('print_history_db', JSON.stringify(printHistory));
-            localStorage.setItem('specs_db', JSON.stringify(specs));
-
+            // Tentar recuperar conexão do Supabase
             const savedKey = localStorage.getItem('supabase_key_db');
             if (savedKey) {
                 document.getElementById('supabase-key-input').value = savedKey;
-                conectarSupabase(false);
+                inicializarSupabaseConexao(savedKey);
+            } else {
+                carregarModoLocal();
             }
+        };
+
+        function carregarModoLocal() {
+            currentUser = null;
+            document.getElementById('auth-overlay').classList.add('hidden');
+            document.getElementById('logout-btn').classList.add('hidden');
+            
+            const badge = document.getElementById('cloud-status-badge');
+            const dot = document.getElementById('cloud-status-dot');
+            const text = document.getElementById('cloud-status-text');
+            badge.classList.remove('hidden');
+            badge.classList.add('flex');
+            dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block";
+            text.textContent = "Modo Local / Offline";
+            document.getElementById('header-subtitle').textContent = "Controle Inteligente de Estoque & Qualidade";
+
+            filaments = JSON.parse(localStorage.getItem('filament_db')) || initialMockData;
+            printers = JSON.parse(localStorage.getItem('printers_db')) || initialMockPrinters;
+            printHistory = JSON.parse(localStorage.getItem('print_history_db')) || [];
+            specs = JSON.parse(localStorage.getItem('specs_db')) || initialMockSpecs;
+
+            carregarEstadosAuxiliares();
+        }
+
+        function carregarEstadosAuxiliares() {
+            brands = JSON.parse(localStorage.getItem('brands_db')) || extractUnique(filaments, 'brand', ['eSUN', '3D Prime', 'GTMax', 'Slicex', 'Voolt3D', 'Creality']);
+            variations = JSON.parse(localStorage.getItem('variations_db')) || extractUnique(specs, 'variation', ['Normal', 'Silk', 'Plus', 'CF', 'Matte', 'Wood', 'Speed']);
+            suppliers = JSON.parse(localStorage.getItem('suppliers_db')) || extractUnique(filaments, 'supplier', ['Prime3D', 'Mercado Livre', 'GTMax 3D', 'Amazon']);
 
             popularSelectMarcas();
             popularSelectVariacoes();
@@ -1146,7 +1019,7 @@
             popularFiltrosCompra();
             renderizarEspecificacoes();
             renderizarParqueImpressoras();
-        };
+        }
 
         function extractUnique(array, key, defaults) {
             const set = new Set(defaults);
@@ -1157,7 +1030,6 @@
         function toggleCadastroPanel() {
             const form = document.getElementById('filament-form');
             const chevron = document.getElementById('panel-chevron');
-            
             if (form.classList.contains('hidden')) {
                 form.classList.remove('hidden');
                 chevron.classList.add('rotate-180');
@@ -1176,7 +1048,6 @@
 
             titleEl.textContent = title;
             messageEl.textContent = message;
-
             modal.classList.remove('hidden');
 
             const cleanUp = () => {
@@ -1184,61 +1055,139 @@
                 btnCancel.removeEventListener('click', onCancel);
                 btnOk.removeEventListener('click', onOk);
             };
-
             const onCancel = () => cleanUp();
-            const onOk = () => {
-                cleanUp();
-                onConfirm();
-            };
+            const onOk = () => { cleanUp(); onConfirm(); };
 
             btnCancel.addEventListener('click', onCancel);
             btnOk.addEventListener('click', onOk);
         }
 
-        async function conectarSupabase(exibirFeedbacks = true) {
+        // CONTROLADOR DE CONEXÃO SUPABASE
+        function inicializarSupabaseConexao(key) {
             const url = "https://ltnzbvksbdbsbjkhgeyy.supabase.co";
-            const key = document.getElementById('supabase-key-input').value.trim();
+            try {
+                supabaseClient = supabase.createClient(url, key);
+                
+                supabaseClient.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        currentUser = session.user;
+                        document.getElementById('auth-overlay').classList.add('hidden');
+                        document.getElementById('logout-btn').classList.remove('hidden');
+                        
+                        const badge = document.getElementById('cloud-status-badge');
+                        const dot = document.getElementById('cloud-status-dot');
+                        const text = document.getElementById('cloud-status-text');
+                        badge.classList.remove('hidden');
+                        badge.classList.add('flex');
+                        dot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block";
+                        text.textContent = "Sincronizado na Nuvem";
+                        document.getElementById('header-subtitle').textContent = `Oficina: ${currentUser.email}`;
 
+                        verificarPrimeiraSincronizacao();
+                    } else {
+                        currentUser = null;
+                        document.getElementById('auth-overlay').classList.remove('hidden');
+                        document.getElementById('logout-btn').classList.add('hidden');
+                        alternarModoAuth('login');
+                    }
+                });
+
+            } catch (err) {
+                console.error(err);
+                showToast("Erro ao conectar à API do Supabase.", "error");
+                carregarModoLocal();
+            }
+        }
+
+        async function salvarConfiguracaoSupabase(exibirFeedbacks = true) {
+            const key = document.getElementById('supabase-key-input').value.trim();
             if (!key) {
                 if (exibirFeedbacks) showToast("Insira a chave Anon do Supabase primeiro!", "error");
                 return;
             }
+            localStorage.setItem('supabase_key_db', key);
+            inicializarSupabaseConexao(key);
+            if (exibirFeedbacks) showToast("Configuração salva. Faça o login para acessar os dados.");
+        }
+
+        function desconectarSupabaseLocal() {
+            showCustomConfirm(
+                "Desconectar Banco de Dados",
+                "Tem certeza que deseja sair do Supabase e voltar para o Modo Local Offline? Suas chaves locais serão limpas.",
+                () => {
+                    localStorage.removeItem('supabase_key_db');
+                    document.getElementById('supabase-key-input').value = '';
+                    supabaseClient = null;
+                    carregarModoLocal();
+                    showToast("Desconectado do Supabase. Operando em modo offline.");
+                }
+            );
+        }
+
+        async function realizarAutenticacao(event) {
+            event.preventDefault();
+            if (!supabaseClient) return;
+
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
 
             try {
-                supabaseClient = supabase.createClient(url, key);
-                localStorage.setItem('supabase_key_db', key);
-
-                const { data, error } = await supabaseClient.from('app_settings').select('*');
-                if (error) throw error;
-
-                const badge = document.getElementById('cloud-status-badge');
-                const dot = document.getElementById('cloud-status-dot');
-                const text = document.getElementById('cloud-status-text');
-
-                badge.classList.remove('hidden');
-                badge.classList.add('flex');
-                dot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block";
-                text.textContent = "Sincronizado na Nuvem";
-
-                if (exibirFeedbacks) showToast("Conectado à nuvem com sucesso!");
-
-                verificarPrimeiraSincronizacao();
-
+                if (authMode === 'login') {
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    showToast("Bem-vindo de volta à sua oficina!");
+                } else {
+                    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                    if (error) throw error;
+                    showToast("Cadastro realizado! Faça login para acessar.");
+                    alternarModoAuth('login');
+                }
             } catch (err) {
                 console.error(err);
-                if (exibirFeedbacks) showToast("Erro ao conectar ao Supabase: " + err.message, "error");
+                showToast("Erro na autenticação: " + err.message, "error");
+            }
+        }
+
+        async function deslogarUsuario() {
+            if (!supabaseClient) return;
+            showCustomConfirm(
+                "Sair da Oficina",
+                "Tem certeza que deseja encerrar sua sessão atual na nuvem?",
+                async () => {
+                    await supabaseClient.auth.signOut();
+                    showToast("Sessão encerrada com sucesso!");
+                }
+            );
+        }
+
+        function alternarModoAuth(forcedMode = null) {
+            const title = document.getElementById('auth-title');
+            const btnText = document.getElementById('auth-btn-text');
+            const switchBtn = document.getElementById('auth-switch-btn');
+
+            if (forcedMode) authMode = forcedMode;
+            else authMode = authMode === 'login' ? 'cadastro' : 'login';
+
+            if (authMode === 'login') {
+                title.textContent = "Acesse sua Oficina";
+                btnText.textContent = "Entrar na Oficina";
+                switchBtn.textContent = "Não tem uma conta? Cadastre-se gratuitamente!";
+            } else {
+                title.textContent = "Crie sua Conta Segura";
+                btnText.textContent = "Cadastrar Nova Conta";
+                switchBtn.textContent = "Já tem cadastro? Acesse sua conta!";
             }
         }
 
         async function verificarPrimeiraSincronizacao() {
-            if (!supabaseClient) return;
+            if (!supabaseClient || !currentUser) return;
 
             const { data: remoteFils } = await supabaseClient.from('filaments').select('id');
             
             if (remoteFils && remoteFils.length === 0 && filaments.length > 0) {
                 showCustomConfirm(
-                    "Sincronizar Dados Locais",
-                    "Seu banco na nuvem está vazio. Deseja enviar seus filamentos, impressoras, especificações e projetos locais salvos para a nuvem agora?",
+                    "Enviar Estoque Local",
+                    "Seu banco na nuvem está vazio para este usuário. Deseja enviar seus filamentos, impressoras, especificações e projetos locais salvos para a nuvem?",
                     async () => {
                         showToast("Sincronizando...", "warning");
                         await uploadDadosParaNuvem();
@@ -1250,11 +1199,11 @@
         }
 
         async function uploadDadosParaNuvem() {
-            if (!supabaseClient) return;
+            if (!supabaseClient || !currentUser) return;
             try {
                 if (filaments.length > 0) {
                     const filamentsPayload = filaments.map(f => ({
-                        id: f.id, brand: f.brand, material: f.material, variation: f.variation,
+                        id: f.id, user_id: currentUser.id, brand: f.brand, material: f.material, variation: f.variation,
                         color_name: f.colorName, color_hex: f.colorHex, total_weight: f.totalWeight,
                         current_weight: f.currentWeight, price: f.price, supplier: f.supplier,
                         notes: f.notes, delivery_status: f.deliveryStatus, date: f.date
@@ -1264,14 +1213,14 @@
 
                 if (printers.length > 0) {
                     const printersPayload = printers.map(p => ({
-                        id: p.id, name: p.name, power_watts: p.powerWatts, notes: p.notes
+                        id: p.id, user_id: currentUser.id, name: p.name, power_watts: p.powerWatts, notes: p.notes
                     }));
                     await supabaseClient.from('printers').upsert(printersPayload);
                 }
 
                 if (specs.length > 0) {
                     const specsPayload = specs.map(s => ({
-                        id: s.id, material: s.material, variation: s.variation,
+                        id: s.id, user_id: currentUser.id, material: s.material, variation: s.variation,
                         humidity: s.humidity, thermal: s.thermal, temps: s.temps,
                         application: s.application, tips: s.tips
                     }));
@@ -1280,7 +1229,7 @@
 
                 if (printHistory.length > 0) {
                     const printPayload = printHistory.map(h => ({
-                        id: h.id, piece_name: h.pieceName, notes: h.notes, date: h.date,
+                        id: h.id, user_id: currentUser.id, piece_name: h.pieceName, notes: h.notes, date: h.date,
                         status: h.status, rating: h.rating, failure_reason: h.failureReason,
                         duration_hours: h.durationHours, duration_minutes: h.durationMinutes,
                         printer_id: h.printerId, printer_name: h.printerName, printer_watts: h.printerWatts,
@@ -1300,7 +1249,7 @@
         }
 
         async function baixarDadosDaNuvem() {
-            if (!supabaseClient) return;
+            if (!supabaseClient || !currentUser) return;
             try {
                 const { data: remoteFils } = await supabaseClient.from('filaments').select('*');
                 const { data: remotePrinters } = await supabaseClient.from('printers').select('*');
@@ -1348,17 +1297,16 @@
                     localStorage.setItem('print_history_db', JSON.stringify(printHistory));
                 }
 
-                atualizarPainel();
-                popularFiltrosCompra();
-                renderizarEspecificacoes();
+                carregarEstadosAuxiliares();
                 showToast("Sincronização com nuvem concluída!");
 
             } catch (err) {
                 console.error(err);
-                showToast("Erro ao ler dados da nuvem: " + err.message, "error");
+                showToast("Erro ao sincronizar dados da nuvem: " + err.message, "error");
             }
         }
 
+        // TOAST NOTIFICATIONS
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -1388,6 +1336,7 @@
             }, 3500);
         }
 
+        // ABA SWITCHING
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(content => {
                 content.classList.add('hidden');
@@ -1786,19 +1735,19 @@
                                     <div class="p-3 text-[10px] sm:text-[11px] text-slate-300 space-y-2 border-t border-slate-850 bg-slate-950/80 font-sans">
                                         <div>
                                             <strong class="text-slate-400 block mb-0.5">💧 Secagem / Umidade:</strong>
-                                            <span class="text-slate-300">${spec.humidity}</span>
+                                            <span class="text-slate-300 whitespace-normal break-words">${spec.humidity}</span>
                                         </div>
                                         <div>
                                             <strong class="text-slate-400 block mb-0.5">🔥 Resistência Térmica:</strong>
-                                            <span class="text-slate-300">${spec.thermal}</span>
+                                            <span class="text-slate-300 whitespace-normal break-words">${spec.thermal}</span>
                                         </div>
                                         <div>
                                             <strong class="text-slate-400 block mb-0.5">🌡️ Temperatura Recomendada:</strong>
-                                            <span class="text-slate-300">${spec.temps}</span>
+                                            <span class="text-slate-300 whitespace-normal break-words">${spec.temps}</span>
                                         </div>
                                         <div>
                                             <strong class="text-slate-400 block mb-0.5">🎯 Aplicação de Uso:</strong>
-                                            <span class="text-slate-300 font-medium">${spec.application}</span>
+                                            <span class="text-slate-300 font-medium whitespace-normal break-words">${spec.application}</span>
                                         </div>
                                         <div class="border-t border-slate-800 pt-2 mt-2">
                                             <strong class="text-amber-400 block mb-1">🛠️ Dicas de Setup & Hardware:</strong>
@@ -1884,7 +1833,7 @@
                                     <button onclick="prepararEdicao(${f.id})" class="bg-slate-800 hover:bg-slate-750 text-indigo-400 p-2 rounded-lg transition text-xs" title="Editar">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <button onclick="duplicarFilamento(${f.id})" class="bg-slate-800 hover:bg-slate-750 text-indigo-400 p-2 rounded-lg transition text-xs" title="Copiar Configurações">
+                                    <button onclick="duplicarFilamento(${f.id})" class="bg-slate-800 hover:bg-slate-750 text-indigo-400 p-2 rounded-lg transition text-xs" title="Copiar">
                                         <i class="fa-solid fa-copy"></i>
                                     </button>
                                     <button onclick="excluirFilamento(${f.id})" class="bg-slate-850 hover:bg-rose-950/35 text-rose-400 p-2 rounded-lg transition text-xs" title="Excluir">
@@ -1925,15 +1874,10 @@
             if (!f) return;
 
             document.getElementById('edit-id').value = '';
-
-            if (brands.includes(f.brand)) {
-                document.getElementById('brand-select').value = f.brand;
-            }
+            if (brands.includes(f.brand)) document.getElementById('brand-select').value = f.brand;
             toggleCustomBrand();
 
-            if (variations.includes(f.variation)) {
-                document.getElementById('variation').value = f.variation;
-            }
+            if (variations.includes(f.variation)) document.getElementById('variation').value = f.variation;
             toggleCustomVariation();
 
             document.getElementById('material').value = f.material;
@@ -1946,7 +1890,7 @@
             document.getElementById('delivery-status').value = f.deliveryStatus;
             document.getElementById('notes').value = f.notes || '';
 
-            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-copy text-indigo-500 animate-pulse"></i> Copiando Filamento`;
+            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-copy text-indigo-500"></i> Copiando Filamento`;
             document.getElementById('submit-btn-text').textContent = 'Cadastrar Novo Rolo';
             const cancelEditBtn = document.getElementById('cancel-edit-btn');
             if (cancelEditBtn) cancelEditBtn.classList.remove('hidden');
@@ -1956,7 +1900,6 @@
 
             mostrarDicasMaterial();
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            showToast("Campos preenchidos com os dados de " + f.colorName);
         }
 
         function prepararEdicao(id) {
@@ -1964,15 +1907,10 @@
             if (!f) return;
 
             document.getElementById('edit-id').value = f.id;
-            
-            if (brands.includes(f.brand)) {
-                document.getElementById('brand-select').value = f.brand;
-            }
+            if (brands.includes(f.brand)) document.getElementById('brand-select').value = f.brand;
             toggleCustomBrand();
 
-            if (variations.includes(f.variation)) {
-                document.getElementById('variation').value = f.variation;
-            }
+            if (variations.includes(f.variation)) document.getElementById('variation').value = f.variation;
             toggleCustomVariation();
 
             document.getElementById('material').value = f.material;
@@ -2017,10 +1955,7 @@
 
             let finalBrand = selectBrand;
             if (selectBrand === '_outro_') {
-                if (!customBrand) {
-                    showToast("Por favor, digite o nome do fabricante.", "error");
-                    return;
-                }
+                if (!customBrand) { return showToast("Por favor, digite o nome do fabricante.", "error"); }
                 finalBrand = customBrand;
                 if (!brands.includes(finalBrand)) {
                     brands.push(finalBrand);
@@ -2032,10 +1967,7 @@
 
             let finalVariation = selectVariation;
             if (selectVariation === '_outro_') {
-                if (!customVariation) {
-                    showToast("Por favor, digite a nova variação.", "error");
-                    return;
-                }
+                if (!customVariation) { return showToast("Por favor, digite a nova variação.", "error"); }
                 finalVariation = customVariation;
                 if (!variations.includes(finalVariation)) {
                     variations.push(finalVariation);
@@ -2046,8 +1978,7 @@
             }
 
             if (currentWeight > totalWeight) {
-                showToast("O peso atual não pode ser maior que o peso inicial!", "error");
-                return;
+                return showToast("O peso atual não pode ser maior que o peso inicial!", "error");
             }
 
             let payload;
@@ -2087,10 +2018,10 @@
                 popularAutocompleteFornecedores();
             }
 
-            if (supabaseClient) {
+            if (supabaseClient && currentUser) {
                 try {
                     await supabaseClient.from('filaments').upsert({
-                        id: payload.id, brand: payload.brand, material: payload.material, variation: payload.variation,
+                        id: payload.id, user_id: currentUser.id, brand: payload.brand, material: payload.material, variation: payload.variation,
                         color_name: payload.colorName, color_hex: payload.colorHex, total_weight: payload.totalWeight,
                         current_weight: payload.currentWeight, price: payload.price, supplier: payload.supplier,
                         notes: payload.notes, delivery_status: payload.deliveryStatus, date: payload.date
@@ -2100,7 +2031,7 @@
                 }
             }
 
-            showToast("Filamento cadastrado/atualizado!");
+            showToast("Filamento salvo com sucesso!");
             limparFormulario();
             atualizarPainel();
             popularFiltrosCompra();
@@ -2131,7 +2062,7 @@
                     filaments = filaments.filter(item => item.id !== id);
                     localStorage.setItem('filament_db', JSON.stringify(filaments));
 
-                    if (supabaseClient) {
+                    if (supabaseClient && currentUser) {
                         try {
                             await supabaseClient.from('filaments').delete().eq('id', id);
                         } catch (e) {}
@@ -2185,7 +2116,7 @@
             filteredPurchases.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(f => {
                 totalSpent += Number(f.price);
                 const tr = document.createElement('tr');
-                tr.className = 'border-b border-slate-850 hover:bg-slate-800/20 transition duration-150';
+                tr.className = 'border-b border-slate-850 hover:bg-slate-800/20 transition duration-150 animate-in fade-in duration-200';
                 
                 let statusInfo = '';
                 if (f.deliveryStatus === 'aguardando') {
@@ -2253,7 +2184,7 @@
                     const specTips = s.tips ? s.tips.replace(/\n/g, '<br>') : 'Sem recomendações de hardware salvas.';
                     
                     const cardHtml = `
-                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 hover:border-indigo-500/40 transition duration-300 flex flex-col justify-between shadow-lg relative overflow-hidden group">
+                        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 sm:p-5 hover:border-indigo-500/40 transition duration-300 flex flex-col justify-between shadow-lg relative overflow-hidden group animate-in fade-in duration-200">
                             <div>
                                 <div class="flex justify-between items-start gap-2 border-b border-slate-800 pb-3 mb-3">
                                     <div>
@@ -2286,28 +2217,28 @@
                                         <span class="text-cyan-400 font-bold block mb-1 text-[10px] uppercase tracking-wide">
                                             <i class="fa-solid fa-droplet"></i> Secagem & Umidade
                                         </span>
-                                        <p class="text-slate-300 text-[11px] leading-relaxed whitespace-normal break-words block w-full whitespace-normal break-words">${s.humidity}</p>
+                                        <p class="text-slate-300 text-[11px] leading-relaxed whitespace-normal break-words block w-full">${s.humidity}</p>
                                     </div>
 
                                     <div class="bg-slate-950/40 p-2.5 rounded-xl border border-slate-850">
                                         <span class="text-amber-500 font-bold block mb-1 text-[10px] uppercase tracking-wide">
                                             <i class="fa-solid fa-fire"></i> Resistência Térmica
                                         </span>
-                                        <p class="text-slate-300 text-[11px] leading-relaxed whitespace-normal break-words block w-full whitespace-normal break-words">${s.thermal}</p>
+                                        <p class="text-slate-300 text-[11px] leading-relaxed whitespace-normal break-words block w-full">${s.thermal}</p>
                                     </div>
 
                                     <div class="bg-slate-950/40 p-3 rounded-xl border border-slate-850">
                                         <span class="text-indigo-400 font-bold block mb-1 text-[10px] uppercase tracking-wide">
                                             <i class="fa-solid fa-circle-info"></i> Aplicação Recomendada
                                         </span>
-                                        <p class="text-slate-300 text-[11px] leading-relaxed whitespace-normal break-words block w-full whitespace-normal break-words">${s.application}</p>
+                                        <p class="text-slate-300 text-[11px] leading-relaxed whitespace-normal break-words block w-full">${s.application}</p>
                                     </div>
 
                                     <div class="bg-slate-950/70 p-3 rounded-xl border border-indigo-900/30 text-[11px]">
                                         <span class="text-amber-400 font-extrabold block mb-1.5 uppercase tracking-wide text-[10px]">
                                             <i class="fa-solid fa-screwdriver-wrench"></i> Dicas de Setup & Hardware
                                         </span>
-                                        <div class="text-slate-300 leading-relaxed font-medium space-y-1 whitespace-normal break-words block w-full whitespace-normal break-words">${specTips}</div>
+                                        <div class="text-slate-300 leading-relaxed font-medium space-y-1 whitespace-normal break-words block w-full">${specTips}</div>
                                     </div>
                                 </div>
                             </div>
@@ -2320,16 +2251,16 @@
                 filtered.forEach(s => {
                     const formattedTips = s.tips ? s.tips.replace(/\n/g, '<br>') : 'Sem recomendações de hardware salvas.';
                     tableRows += `
-                        <tr class="border-b border-slate-850 hover:bg-slate-800/10 transition text-xs text-slate-300">
+                        <tr class="border-b border-slate-850 hover:bg-slate-800/10 transition text-xs text-slate-300 animate-in fade-in duration-200">
                             <td class="py-3.5 pl-4 align-top">
                                 <span class="font-bold text-white block">${s.material}</span>
                                 <span class="text-[10px] text-indigo-400 font-semibold bg-indigo-950/40 px-1.5 py-0.5 rounded border border-indigo-900 inline-block mt-0.5">${s.variation}</span>
                             </td>
-                            <td class="py-3.5 whitespace-normal break-words min-w-[150px] max-w-[220px] pr-3 align-top whitespace-normal break-words">${s.humidity}</td>
-                            <td class="py-3.5 whitespace-normal break-words min-w-[150px] max-w-[220px] pr-3 align-top whitespace-normal break-words">${s.thermal}</td>
-                            <td class="py-3.5 font-semibold text-emerald-400 whitespace-normal break-words min-w-[110px] pr-3 align-top whitespace-normal break-words">${s.temps}</td>
-                            <td class="py-3.5 whitespace-normal break-words min-w-[150px] max-w-[220px] pr-3 align-top whitespace-normal break-words">${s.application}</td>
-                            <td class="py-3.5 whitespace-normal break-words min-w-[200px] max-w-[320px] text-amber-400 italic pr-3 align-top whitespace-normal break-words">${formattedTips}</td>
+                            <td class="py-3.5 whitespace-normal break-words min-w-[150px] max-w-[220px] pr-3 align-top">${s.humidity}</td>
+                            <td class="py-3.5 whitespace-normal break-words min-w-[150px] max-w-[220px] pr-3 align-top">${s.thermal}</td>
+                            <td class="py-3.5 font-semibold text-emerald-400 whitespace-normal break-words min-w-[110px] pr-3 align-top">${s.temps}</td>
+                            <td class="py-3.5 whitespace-normal break-words min-w-[150px] max-w-[220px] pr-3 align-top">${s.application}</td>
+                            <td class="py-3.5 whitespace-normal break-words min-w-[200px] max-w-[320px] text-amber-400 italic pr-3 align-top">${formattedTips}</td>
                             <td class="py-3.5 text-right pr-4 align-top">
                                 <div class="flex justify-end gap-1.5">
                                     <button onclick="prepararEdicaoSpec(${s.id})" class="bg-slate-850 p-2 rounded hover:bg-slate-800 transition text-indigo-400" title="Editar"><i class="fa-solid fa-edit"></i></button>
@@ -2396,10 +2327,11 @@
 
             localStorage.setItem('specs_db', JSON.stringify(specs));
 
-            if (supabaseClient) {
+            if (supabaseClient && currentUser) {
                 try {
                     await supabaseClient.from('specs').upsert({
                         id: payload.id,
+                        user_id: currentUser.id,
                         material: payload.material,
                         variation: payload.variation,
                         humidity: payload.humidity,
@@ -2457,7 +2389,7 @@
                     specs = specs.filter(item => item.id !== id);
                     localStorage.setItem('specs_db', JSON.stringify(specs));
 
-                    if (supabaseClient) {
+                    if (supabaseClient && currentUser) {
                         try {
                             await supabaseClient.from('specs').delete().eq('id', id);
                         } catch (e) {}
@@ -2502,10 +2434,10 @@
 
             localStorage.setItem('printers_db', JSON.stringify(printers));
             
-            if (supabaseClient) {
+            if (supabaseClient && currentUser) {
                 try {
                     await supabaseClient.from('printers').upsert({
-                        id: payload.id, name: payload.name, power_watts: payload.powerWatts, notes: payload.notes
+                        id: payload.id, user_id: currentUser.id, name: payload.name, power_watts: payload.powerWatts, notes: payload.notes
                     });
                 } catch(e) {}
             }
@@ -2546,7 +2478,7 @@
                 async () => {
                     printers = printers.filter(item => item.id !== id);
                     localStorage.setItem('printers_db', JSON.stringify(printers));
-                    if (supabaseClient) {
+                    if (supabaseClient && currentUser) {
                         try {
                             await supabaseClient.from('printers').delete().eq('id', id);
                         } catch (e) {}
@@ -2565,7 +2497,7 @@
             if (printerViewMode === 'grid') {
                 printers.forEach(p => {
                     const cardHtml = `
-                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow">
+                        <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-col justify-between shadow animate-in fade-in duration-200">
                             <div>
                                 <div class="flex items-center justify-between mb-2">
                                     <h4 class="font-bold text-white text-sm sm:text-base">${p.name}</h4>
@@ -2585,7 +2517,7 @@
                 let tableRows = '';
                 printers.forEach(p => {
                     tableRows += `
-                        <tr class="border-b border-slate-850 hover:bg-slate-800/10 transition text-xs text-slate-300">
+                        <tr class="border-b border-slate-850 hover:bg-slate-800/10 transition text-xs text-slate-300 animate-in fade-in duration-200">
                             <td class="py-3 pl-4 font-bold text-white">${p.name}</td>
                             <td class="py-3 font-semibold text-amber-500">${p.powerWatts}W</td>
                             <td class="py-3 truncate max-w-[200px]" title="${p.notes || ''}">${p.notes || 'Sem observações.'}</td>
@@ -2946,10 +2878,13 @@
             const totalExtraCost = extraCosts.reduce((acc, e) => acc + e.cost, 0);
             const grandTotalCost = totalFilamentCost + totalExtraCost + calculatedEnergyCost;
 
+            const activeUserEmail = currentUser ? currentUser.email : "Modo Local";
+            const extendedNotes = `[Operador: ${activeUserEmail}] ${notes}`;
+
             const finalProjectPayload = {
                 id: editId ? Number(editId) : Date.now(),
                 pieceName: name,
-                notes,
+                notes: extendedNotes,
                 date: editId ? printHistory.find(p => p.id === Number(editId))?.date : new Date().toISOString(),
                 status,
                 rating,
@@ -2978,13 +2913,13 @@
             localStorage.setItem('filament_db', JSON.stringify(filaments));
             localStorage.setItem('print_history_db', JSON.stringify(printHistory));
 
-            if (supabaseClient) {
+            if (supabaseClient && currentUser) {
                 try {
                     for (const f of filamentsUsed) {
                         const localF = filaments.find(item => item.id === f.filamentId);
                         if (localF) {
                             await supabaseClient.from('filaments').upsert({
-                                id: localF.id, brand: localF.brand, material: localF.material, variation: localF.variation,
+                                id: localF.id, user_id: currentUser.id, brand: localF.brand, material: localF.material, variation: localF.variation,
                                 color_name: localF.colorName, color_hex: localF.colorHex, total_weight: localF.totalWeight,
                                 current_weight: localF.currentWeight, price: localF.price, supplier: localF.supplier,
                                 notes: localF.notes, delivery_status: localF.deliveryStatus, date: localF.date
@@ -2993,7 +2928,7 @@
                     }
 
                     await supabaseClient.from('print_history').upsert({
-                        id: finalProjectPayload.id, piece_name: finalProjectPayload.pieceName, notes: finalProjectPayload.notes,
+                        id: finalProjectPayload.id, user_id: currentUser.id, piece_name: finalProjectPayload.pieceName, notes: finalProjectPayload.notes,
                         date: finalProjectPayload.date, status: finalProjectPayload.status, rating: finalProjectPayload.rating,
                         failure_reason: finalProjectPayload.failureReason, duration_hours: finalProjectPayload.durationHours,
                         duration_minutes: finalProjectPayload.durationMinutes, printer_id: finalProjectPayload.printerId,
@@ -3036,7 +2971,12 @@
             document.getElementById('proj-edit-id').value = project.id;
 
             document.getElementById('proj-name').value = project.pieceName;
-            document.getElementById('proj-notes').value = project.notes || '';
+            
+            let rawNotes = project.notes || '';
+            if (rawNotes.includes(']')) {
+                rawNotes = rawNotes.substring(rawNotes.indexOf(']') + 1).trim();
+            }
+            document.getElementById('proj-notes').value = rawNotes;
             document.getElementById('proj-time-hours').value = project.durationHours || '';
             document.getElementById('proj-time-minutes').value = project.durationMinutes || '';
             if (printSelect) printSelect.value = project.printerId || '';
@@ -3090,13 +3030,13 @@
                     localStorage.setItem('filament_db', JSON.stringify(filaments));
                     localStorage.setItem('print_history_db', JSON.stringify(printHistory));
 
-                    if (supabaseClient) {
+                    if (supabaseClient && currentUser) {
                         try {
                             for (const f of project.filamentsUsed) {
                                 const localF = filaments.find(item => item.id === f.filamentId);
                                 if (localF) {
                                     await supabaseClient.from('filaments').upsert({
-                                        id: localF.id, brand: localF.brand, material: localF.material, variation: localF.variation,
+                                        id: localF.id, user_id: currentUser.id, brand: localF.brand, material: localF.material, variation: localF.variation,
                                         color_name: localF.colorName, color_hex: localF.colorHex, total_weight: localF.totalWeight,
                                         current_weight: localF.currentWeight, price: localF.price, supplier: localF.supplier,
                                         notes: localF.notes, delivery_status: localF.deliveryStatus, date: localF.date
@@ -3130,7 +3070,7 @@
 
             [...printHistory].sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(h => {
                 const tr = document.createElement('tr');
-                tr.className = 'border-b border-slate-850 hover:bg-slate-800/20 transition duration-150';
+                tr.className = 'border-b border-slate-850 hover:bg-slate-800/20 transition duration-150 animate-in fade-in duration-200';
 
                 const filamentsList = h.filamentsUsed || [];
                 const extrasList = h.extraCosts || [];
@@ -3280,7 +3220,7 @@
                     printHistory = [];
                     localStorage.setItem('print_history_db', JSON.stringify(printHistory));
 
-                    if (supabaseClient) {
+                    if (supabaseClient && currentUser) {
                         try {
                             await supabaseClient.from('print_history').delete().neq('id', 0);
                         } catch (e) {}
@@ -3390,20 +3330,12 @@
                         localStorage.setItem('suppliers_db', JSON.stringify(suppliers));
                         localStorage.setItem('energy_rate_db', energyRate);
 
-                        if (supabaseClient) {
+                        if (supabaseClient && currentUser) {
                             showToast("Sincronizando backup com a nuvem...", "warning");
                             await uploadDadosParaNuvem();
                         }
 
-                        popularSelectMarcas();
-                        popularSelectVariacoes();
-                        popularAutocompleteFornecedores();
-                        popularFiltrosSelecao();
-                        popularFiltrosCompra();
-                        atualizarPainel();
-                        renderizarEspecificacoes();
-                        renderizarParqueImpressoras();
-                        
+                        carregarEstadosAuxiliares();
                         showToast("Dados do backup restaurados com êxito!");
                     } else {
                         showToast("Arquivo de backup incompatível ou corrompido.", "error");
@@ -3431,3 +3363,4 @@
     </script>
 </body>
 </html>
+```
