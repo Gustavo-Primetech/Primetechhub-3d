@@ -89,10 +89,10 @@
         <div class="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-md p-6 sm:p-8 relative shadow-2xl">
             <div class="text-center mb-6">
                 <div class="bg-indigo-600 w-12 h-12 rounded-xl text-white shadow-lg shadow-indigo-500/30 flex items-center justify-center mx-auto mb-3">
-                    <i class="fa-solid fa-lock text-xl animate-pulse"></i>
+                    <i class="fa-solid fa-lock text-xl"></i>
                 </div>
                 <h3 class="text-xl font-bold text-white" id="auth-title">Acesse sua Oficina</h3>
-                <p class="text-xs text-slate-400 mt-1" id="auth-subtitle">Conectado ao Supabase com compartilhamento de estoque ativo.</p>
+                <p class="text-xs text-slate-400 mt-1" id="auth-subtitle">Conectado ao Supabase com isolamento de dados RLS ativo.</p>
             </div>
 
             <form id="auth-form" onsubmit="realizarAutenticacao(event)" class="space-y-4">
@@ -122,7 +122,7 @@
         </div>
     </div>
 
-    <!-- CONTAINER DA APLICACAO -->
+    <!-- DASHBOARD PRINCIPAL -->
     <div class="min-h-screen flex flex-col">
         <!-- HEADER -->
         <header class="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-40">
@@ -138,13 +138,11 @@
                 </div>
                 
                 <div class="flex items-center space-x-2">
-                    <!-- Conexão em Nuvem Status Indicator -->
                     <div id="cloud-status-badge" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700 text-xs text-slate-400">
                         <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block" id="cloud-status-dot"></span>
                         <span id="cloud-status-text">Modo Local</span>
                     </div>
 
-                    <!-- Botão de Sair (Auth) -->
                     <button id="logout-btn" onclick="deslogarUsuario()" class="hidden px-2.5 py-1.5 text-xs font-semibold bg-rose-950/40 border border-rose-900/35 hover:bg-rose-950/40 text-rose-400 rounded-lg transition duration-200 flex items-center gap-1.5" title="Sair da Conta">
                         <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden md:inline">Sair</span>
                     </button>
@@ -198,12 +196,12 @@
                     </div>
                 </div>
 
-                <!-- Investimento Ativo (Disponível + Trânsito Unificado com Detalhamento) -->
+                <!-- Investimento Ativo (Disponível + Trânsito) -->
                 <div class="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 flex items-center justify-between shadow-sm">
                     <div class="w-full">
                         <p class="text-slate-400 text-[11px] sm:text-xs font-medium uppercase tracking-wider">Investimento</p>
                         <div id="stat-total-value" class="mt-1">
-                            <!-- Injetado dinamicamente via JS para mostrar os valores divididos -->
+                            <!-- Injetado dinamicamente via JS -->
                         </div>
                     </div>
                     <div class="bg-amber-500/10 p-2.5 sm:p-3.5 rounded-xl text-amber-400 hidden sm:block shrink-0">
@@ -534,7 +532,7 @@
                     <div class="bg-slate-900 border border-slate-800 rounded-xl p-5 flex items-center justify-between">
                         <div>
                             <p class="text-slate-400 text-[10px] sm:text-xs font-medium uppercase tracking-wider">Falha Recorrente</p>
-                            <h3 class="text-xs sm:text-sm font-extrabold text-rose-450 mt-1.5 truncate max-w-[150px] sm:max-w-[200px]" id="stat-main-failure-reason">Nenhuma</h3>
+                            <h3 class="text-xs sm:text-sm font-extrabold text-rose-455 mt-1.5 truncate max-w-[150px] sm:max-w-[200px]" id="stat-main-failure-reason">Nenhuma</h3>
                         </div>
                         <div class="bg-rose-500/10 p-3 rounded-lg text-rose-400 text-lg sm:text-xl shrink-0">
                             <i class="fa-solid fa-bug"></i>
@@ -961,65 +959,102 @@
         let authMode = 'login'; // 'login' ou 'cadastro'
 
         window.onload = function () {
-            if (localStorage.getItem('energy_rate_db')) {
-                energyRate = Number(localStorage.getItem('energy_rate_db'));
-            }
-            document.getElementById('energy-rate').value = energyRate;
+            try {
+                if (localStorage.getItem('energy_rate_db')) {
+                    energyRate = Number(localStorage.getItem('energy_rate_db'));
+                }
+                const rateInput = document.getElementById('energy-rate');
+                if (rateInput) rateInput.value = energyRate;
 
-            stockViewMode = localStorage.getItem('stock_view_mode') || 'grid';
-            printerViewMode = localStorage.getItem('printer_view_mode') || 'grid';
-            specViewMode = localStorage.getItem('spec_view_mode') || 'grid';
-            changeStockViewBtnClass();
-            changePrinterViewBtnClass();
-            changeSpecViewBtnClass();
+                stockViewMode = localStorage.getItem('stock_view_mode') || 'grid';
+                printerViewMode = localStorage.getItem('printer_view_mode') || 'grid';
+                specViewMode = localStorage.getItem('spec_view_mode') || 'grid';
+                
+                changeStockViewBtnClass();
+                changePrinterViewBtnClass();
+                changeSpecViewBtnClass();
 
-            // Tentar recuperar conexão do Supabase
-            const savedKey = localStorage.getItem('supabase_key_db');
-            if (savedKey) {
-                document.getElementById('supabase-key-input').value = savedKey;
-                inicializarSupabaseConexao(savedKey);
-            } else {
+                // Recuperando bancos de forma segura
+                try {
+                    filaments = JSON.parse(localStorage.getItem('filament_db')) || initialMockData;
+                    printers = JSON.parse(localStorage.getItem('printers_db')) || initialMockPrinters;
+                    printHistory = JSON.parse(localStorage.getItem('print_history_db')) || [];
+                    specs = JSON.parse(localStorage.getItem('specs_db')) || initialMockSpecs;
+                } catch (e) {
+                    console.error("Falha ao recuperar dados salvos, usando mocks:", e);
+                    filaments = initialMockData;
+                    printers = initialMockPrinters;
+                    printHistory = [];
+                    specs = initialMockSpecs;
+                }
+
+                carregarEstadosAuxiliares();
+
+                // Tentar recuperar conexão do Supabase
+                const savedKey = localStorage.getItem('supabase_key_db');
+                if (savedKey) {
+                    const keyInput = document.getElementById('supabase-key-input');
+                    if (keyInput) keyInput.value = savedKey;
+                    inicializarSupabaseConexao(savedKey);
+                } else {
+                    carregarModoLocal();
+                }
+            } catch (err) {
+                console.error("Erro fatal na inicialização. Carregando em modo de segurança local.", err);
                 carregarModoLocal();
             }
         };
 
         function carregarModoLocal() {
             currentUser = null;
-            document.getElementById('auth-overlay').classList.add('hidden');
-            document.getElementById('logout-btn').classList.add('hidden');
+            
+            const authEl = document.getElementById('auth-overlay');
+            if (authEl) authEl.classList.add('hidden');
+            const logoutEl = document.getElementById('logout-btn');
+            if (logoutEl) logoutEl.classList.add('hidden');
             
             const badge = document.getElementById('cloud-status-badge');
             const dot = document.getElementById('cloud-status-dot');
             const text = document.getElementById('cloud-status-text');
-            badge.classList.remove('hidden');
-            badge.classList.add('flex');
-            dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block";
-            text.textContent = "Modo Local / Offline";
-            document.getElementById('header-subtitle').textContent = "Controle Inteligente de Estoque & Qualidade";
+            const headerSub = document.getElementById('header-subtitle');
+            
+            if (badge) {
+                badge.classList.remove('hidden');
+                badge.classList.add('flex');
+            }
+            if (dot) dot.className = "w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block";
+            if (text) text.textContent = "Modo Local / Offline";
+            if (headerSub) headerSub.textContent = "Controle Inteligente de Estoque & Qualidade";
 
-            filaments = JSON.parse(localStorage.getItem('filament_db')) || initialMockData;
-            printers = JSON.parse(localStorage.getItem('printers_db')) || initialMockPrinters;
-            printHistory = JSON.parse(localStorage.getItem('print_history_db')) || [];
-            specs = JSON.parse(localStorage.getItem('specs_db')) || initialMockSpecs;
+            try {
+                filaments = JSON.parse(localStorage.getItem('filament_db')) || initialMockData;
+                printers = JSON.parse(localStorage.getItem('printers_db')) || initialMockPrinters;
+                printHistory = JSON.parse(localStorage.getItem('print_history_db')) || [];
+                specs = JSON.parse(localStorage.getItem('specs_db')) || initialMockSpecs;
+            } catch(e) {}
 
             carregarEstadosAuxiliares();
         }
 
         function carregarEstadosAuxiliares() {
-            brands = JSON.parse(localStorage.getItem('brands_db')) || extractUnique(filaments, 'brand', ['eSUN', '3D Prime', 'GTMax', 'Slicex', 'Voolt3D', 'Creality']);
-            variations = JSON.parse(localStorage.getItem('variations_db')) || extractUnique(specs, 'variation', ['Normal', 'Silk', 'Plus', 'CF', 'Matte', 'Wood', 'Speed']);
-            suppliers = JSON.parse(localStorage.getItem('suppliers_db')) || extractUnique(filaments, 'supplier', ['Prime3D', 'Mercado Livre', 'GTMax 3D', 'Amazon']);
+            try {
+                brands = JSON.parse(localStorage.getItem('brands_db')) || extractUnique(filaments, 'brand', ['eSUN', '3D Prime', 'GTMax', 'Slicex', 'Voolt3D', 'Creality']);
+                variations = JSON.parse(localStorage.getItem('variations_db')) || extractUnique(specs, 'variation', ['Normal', 'Silk', 'Plus', 'CF', 'Matte', 'Wood', 'Speed']);
+                suppliers = JSON.parse(localStorage.getItem('suppliers_db')) || extractUnique(filaments, 'supplier', ['Prime3D', 'Mercado Livre', 'GTMax 3D', 'Amazon']);
 
-            popularSelectMarcas();
-            popularSelectVariacoes();
-            popularAutocompleteFornecedores();
-            popularFiltrosSelecao();
-            
-            mostrarDicasMaterial();
-            atualizarPainel();
-            popularFiltrosCompra();
-            renderizarEspecificacoes();
-            renderizarParqueImpressoras();
+                popularSelectMarcas();
+                popularSelectVariacoes();
+                popularAutocompleteFornecedores();
+                popularFiltrosSelecao();
+                
+                mostrarDicasMaterial();
+                atualizarPainel();
+                popularFiltrosCompra();
+                renderizarEspecificacoes();
+                renderizarParqueImpressoras();
+            } catch (err) {
+                console.error("Falha ao inicializar auxiliares:", err);
+            }
         }
 
         function extractUnique(array, key, defaults) {
@@ -1031,6 +1066,7 @@
         function toggleCadastroPanel() {
             const form = document.getElementById('filament-form');
             const chevron = document.getElementById('panel-chevron');
+            if (!form || !chevron) return;
             if (form.classList.contains('hidden')) {
                 form.classList.remove('hidden');
                 chevron.classList.add('rotate-180');
@@ -1044,7 +1080,6 @@
             const select = document.getElementById('brand-select');
             if (!select) return;
             
-            // Memoriza a seleção atual do usuário para evitar resets durante sincronizações
             const currentValue = select.value;
             select.innerHTML = '';
             
@@ -1060,7 +1095,6 @@
             optOutro.textContent = "+ Outro (Adicionar Novo...)";
             select.appendChild(optOutro);
 
-            // Restaura a seleção se ela ainda existir nas novas opções
             if (currentValue && Array.from(select.options).some(o => o.value === currentValue)) {
                 select.value = currentValue;
             }
@@ -1086,7 +1120,6 @@
             const select = document.getElementById('variation');
             if (!select) return;
             
-            // Memoriza a variação ativa antes de recriar as opções do seletor
             const currentValue = select.value;
             select.innerHTML = '';
             
@@ -1102,7 +1135,6 @@
             optOutro.textContent = "+ Outra Variação...";
             select.appendChild(optOutro);
 
-            // Restaura o estado anterior do dropdown de forma invisível
             if (currentValue && Array.from(select.options).some(o => o.value === currentValue)) {
                 select.value = currentValue;
             }
@@ -1155,7 +1187,6 @@
 
             const formMat = document.getElementById('material');
             if (formMat) {
-                // Impede que o material do formulário resete para PLA involuntariamente
                 const currentMatVal = formMat.value;
                 formMat.innerHTML = '';
                 materialsList.forEach(m => {
@@ -1208,7 +1239,8 @@
             let variation = varEl.value;
 
             if (variation === '_outro_') {
-                variation = (document.getElementById('variation-custom').value || '').trim() || 'Customizada';
+                const varCustom = document.getElementById('variation-custom');
+                variation = varCustom ? (varCustom.value || '').trim() : 'Customizada';
             }
 
             const spec = specs.find(s => s.material === material && s.variation === variation) || 
@@ -1296,58 +1328,61 @@
         }
 
         function atualizarPainel() {
-            // Total de Rolos (Somente Fisicos/Entregues)
-            const activeSpools = filaments.filter(f => f.currentWeight > 0 && f.deliveryStatus === 'entregue').length;
-            const statTotalSpools = document.getElementById('stat-total-spools');
-            if (statTotalSpools) statTotalSpools.textContent = activeSpools;
+            try {
+                // Total de Rolos (Somente Fisicos/Entregues)
+                const activeSpools = filaments.filter(f => f.currentWeight > 0 && f.deliveryStatus === 'entregue').length;
+                const statTotalSpools = document.getElementById('stat-total-spools');
+                if (statTotalSpools) statTotalSpools.textContent = activeSpools;
 
-            // Peso útil disponível
-            const totalGrams = filaments.reduce((acc, current) => {
-                if (current.deliveryStatus === 'entregue') {
-                    return acc + Number(current.currentWeight);
-                }
-                return acc;
-            }, 0);
-            const statTotalWeight = document.getElementById('stat-total-weight');
-            if (statTotalWeight) statTotalWeight.textContent = `${(totalGrams / 1000).toFixed(2)} kg`;
+                // Peso útil disponível
+                const totalGrams = filaments.reduce((acc, current) => {
+                    if (current.deliveryStatus === 'entregue') {
+                        return acc + Number(current.currentWeight);
+                    }
+                    return acc;
+                }, 0);
+                const statTotalWeight = document.getElementById('stat-total-weight');
+                if (statTotalWeight) statTotalWeight.textContent = `${(totalGrams / 1000).toFixed(2)} kg`;
 
-            // Estoque Crítico
-            const lowStockCount = filaments.filter(f => f.currentWeight < 150 && f.currentWeight > 0 && f.deliveryStatus === 'entregue').length;
-            const statLowStock = document.getElementById('stat-low-stock');
-            if (statLowStock) statLowStock.textContent = lowStockCount;
+                // Estoque Crítico
+                const lowStockCount = filaments.filter(f => f.currentWeight < 150 && f.currentWeight > 0 && f.deliveryStatus === 'entregue').length;
+                const statLowStock = document.getElementById('stat-low-stock');
+                if (statLowStock) statLowStock.textContent = lowStockCount;
 
-            // CÁLCULO DE INVESTIMENTO DUPLO (FISICO vs TRÂNSITO)
-            let availableValue = 0;
-            let transitValue = 0;
+                // CÁLCULO DE INVESTIMENTO DUPLO
+                let availableValue = 0;
+                let transitValue = 0;
 
-            filaments.forEach(f => {
-                const ratio = Number(f.totalWeight) > 0 ? (Number(f.currentWeight) / Number(f.totalWeight)) : 1;
-                const value = Number(f.price) * ratio;
-                
-                if (f.deliveryStatus === 'entregue') {
-                    availableValue += value;
-                } else if (f.deliveryStatus === 'aguardando') {
-                    transitValue += value;
-                }
-            });
+                filaments.forEach(f => {
+                    const ratio = Number(f.totalWeight) > 0 ? (Number(f.currentWeight) / Number(f.totalWeight)) : 1;
+                    const value = Number(f.price) * ratio;
+                    
+                    if (f.deliveryStatus === 'entregue') {
+                        availableValue += value;
+                    } else if (f.deliveryStatus === 'aguardando') {
+                        transitValue += value;
+                    }
+                });
 
-            const totalInvestmentValue = availableValue + transitValue;
+                const totalInvestmentValue = availableValue + transitValue;
 
-            // Renderizando layout com detalhes separados no mesmo card de forma reativa
-            const statTotalValue = document.getElementById('stat-total-value');
-            if (statTotalValue) {
-                statTotalValue.innerHTML = `
-                    <div class="flex flex-col">
-                        <span class="text-2xl sm:text-3xl font-extrabold text-amber-500 leading-tight">R$ ${totalInvestmentValue.toFixed(2).replace('.', ',')}</span>
-                        <div class="flex flex-wrap gap-2 mt-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-                            <span class="text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 block"></span>Disp: R$ ${availableValue.toFixed(2).replace('.', ',')}</span>
-                            <span class="border-l border-slate-700 pl-2 text-amber-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 block animate-pulse"></span>Trânsito: R$ ${transitValue.toFixed(2).replace('.', ',')}</span>
+                const statTotalValue = document.getElementById('stat-total-value');
+                if (statTotalValue) {
+                    statTotalValue.innerHTML = `
+                        <div class="flex flex-col">
+                            <span class="text-2xl sm:text-3xl font-extrabold text-amber-500 leading-tight">R$ ${totalInvestmentValue.toFixed(2).replace('.', ',')}</span>
+                            <div class="flex flex-wrap gap-2 mt-1 text-[10px] text-slate-400 font-bold uppercase tracking-wider">
+                                <span class="text-emerald-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500 block"></span>Disp: R$ ${availableValue.toFixed(2).replace('.', ',')}</span>
+                                <span class="border-l border-slate-700 pl-2 text-amber-400 flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-amber-500 block animate-pulse"></span>Trânsito: R$ ${transitValue.toFixed(2).replace('.', ',')}</span>
+                            </div>
                         </div>
-                    </div>
-                `;
-            }
+                    `;
+                }
 
-            renderizarListaFilamentos();
+                renderizarListaFilamentos();
+            } catch (err) {
+                console.error("Erro ao atualizar o painel:", err);
+            }
         }
 
         function renderizarListaFilamentos() {
@@ -1389,7 +1424,7 @@
                     
                     if (f.deliveryStatus === 'aguardando') {
                         progressColor = 'bg-slate-700';
-                        alertBadge = `<span class="bg-amber-950 text-amber-400 border border-amber-900 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-clock animate-pulse"></i> Trânsito</span>`;
+                        alertBadge = `<span class="bg-amber-955 text-amber-400 border border-amber-900 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-clock animate-pulse"></i> Trânsito</span>`;
                     } else if (f.currentWeight <= 0) {
                         progressColor = 'bg-slate-800';
                         alertBadge = `<span class="bg-slate-950 text-slate-400 border border-slate-800 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Esgotado</span>`;
@@ -1398,7 +1433,7 @@
                         alertBadge = `<span class="bg-rose-950 text-rose-400 border border-rose-900 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1"><i class="fa-solid fa-triangle-exclamation animate-bounce"></i> Crítico</span>`;
                     } else if (f.currentWeight < 350) {
                         progressColor = 'bg-amber-500';
-                        alertBadge = `<span class="bg-amber-950 text-amber-400 border border-amber-900 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Baixo</span>`;
+                        alertBadge = `<span class="bg-amber-955 text-amber-400 border border-amber-900 text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">Baixo</span>`;
                     } else {
                         progressColor = 'bg-emerald-500';
                     }
@@ -1410,7 +1445,7 @@
                                  { humidity: 'Sem parâmetros', thermal: 'Sem parâmetros', temps: 'Mesa: - | Bico: -', application: 'Geral', tips: 'Nenhuma dica disponível.' };
 
                     const cardHtml = `
-                        <div class="bg-slate-900 border ${f.deliveryStatus === 'aguardando' ? 'border-dashed border-slate-750 opacity-70' : (f.currentWeight < 150 && f.currentWeight > 0 ? 'border-rose-900/40 bg-rose-950/5' : 'border-slate-800')} rounded-2xl p-4 sm:p-5 hover:border-slate-750 transition duration-350 flex flex-col justify-between shadow-lg animate-in fade-in duration-200">
+                        <div class="bg-slate-900 border ${f.deliveryStatus === 'aguardando' ? 'border-dashed border-slate-750 opacity-70' : (f.currentWeight < 150 && f.currentWeight > 0 ? 'border-rose-900/40 bg-rose-950/5' : 'border-slate-800')} rounded-2xl p-4 sm:p-5 hover:border-slate-750 transition duration-350 flex flex-col justify-between shadow-lg">
                             <div>
                                 <div class="flex justify-between items-start gap-2 mb-3">
                                     <div class="flex items-center gap-2.5 min-w-0">
@@ -1468,10 +1503,6 @@
                                         <div>
                                             <strong class="text-slate-400 block mb-0.5">🎯 Aplicação de Uso:</strong>
                                             <span class="text-slate-300 font-medium whitespace-normal break-words">${spec.application}</span>
-                                        </div>
-                                        <div class="border-t border-slate-800 pt-2 mt-2">
-                                            <strong class="text-amber-400 block mb-1">🛠️ Dicas de Setup & Hardware:</strong>
-                                            <span class="text-slate-300 block leading-normal whitespace-normal break-words">${spec.tips ? spec.tips.replace(/\n/g, '<br>') : 'Nenhuma dica disponível.'}</span>
                                         </div>
                                     </div>
                                 </details>
@@ -1594,24 +1625,53 @@
             if (!f) return;
 
             document.getElementById('edit-id').value = '';
-            if (brands.includes(f.brand)) document.getElementById('brand-select').value = f.brand;
-            toggleCustomBrand();
+            
+            // Forçamos os valores de forma direta e travamos antes de renderizar as mudanças para evitar re-triggers
+            const bSelect = document.getElementById('brand-select');
+            if (bSelect) {
+                if (brands.includes(f.brand)) bSelect.value = f.brand;
+                toggleCustomBrand();
+            }
 
-            if (variations.includes(f.variation)) document.getElementById('variation').value = f.variation;
-            toggleCustomVariation();
+            const vSelect = document.getElementById('variation');
+            if (vSelect) {
+                if (variations.includes(f.variation)) vSelect.value = f.variation;
+                toggleCustomVariation();
+            }
 
-            document.getElementById('material').value = f.material;
-            document.getElementById('color-name').value = f.colorName + " (Cópia)";
-            document.getElementById('color-hex').value = f.colorHex;
-            document.getElementById('total-weight').value = f.totalWeight;
-            document.getElementById('current-weight').value = f.totalWeight;
-            document.getElementById('price').value = f.price;
-            document.getElementById('supplier').value = f.supplier === 'Desconhecido' ? '' : f.supplier;
-            document.getElementById('delivery-status').value = f.deliveryStatus;
-            document.getElementById('notes').value = f.notes || '';
+            const matSelect = document.getElementById('material');
+            if (matSelect) matSelect.value = f.material;
 
-            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-copy text-indigo-500"></i> Copiando Filamento`;
-            document.getElementById('submit-btn-text').textContent = 'Cadastrar Novo Rolo';
+            const cName = document.getElementById('color-name');
+            if (cName) cName.value = f.colorName + " (Cópia)";
+
+            const cHex = document.getElementById('color-hex');
+            if (cHex) cHex.value = f.colorHex;
+
+            const tWeight = document.getElementById('total-weight');
+            if (tWeight) tWeight.value = f.totalWeight;
+
+            const curWeight = document.getElementById('current-weight');
+            if (curWeight) curWeight.value = f.totalWeight;
+
+            const prVal = document.getElementById('price');
+            if (prVal) prVal.value = f.price;
+
+            const suppVal = document.getElementById('supplier');
+            if (suppVal) suppVal.value = f.supplier === 'Desconhecido' ? '' : f.supplier;
+
+            const dStatus = document.getElementById('delivery-status');
+            if (dStatus) dStatus.value = f.deliveryStatus;
+
+            const notesVal = document.getElementById('notes');
+            if (notesVal) notesVal.value = f.notes || '';
+
+            const formTitle = document.getElementById('form-title');
+            if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-copy text-indigo-500"></i> Copiando Filamento`;
+
+            const btnTxt = document.getElementById('submit-btn-text');
+            if (btnTxt) btnTxt.textContent = 'Cadastrar Novo Rolo';
+
             const cancelEditBtn = document.getElementById('cancel-edit-btn');
             if (cancelEditBtn) cancelEditBtn.classList.remove('hidden');
 
@@ -1627,24 +1687,52 @@
             if (!f) return;
 
             document.getElementById('edit-id').value = f.id;
-            if (brands.includes(f.brand)) document.getElementById('brand-select').value = f.brand;
-            toggleCustomBrand();
+            
+            const bSelect = document.getElementById('brand-select');
+            if (bSelect) {
+                if (brands.includes(f.brand)) bSelect.value = f.brand;
+                toggleCustomBrand();
+            }
 
-            if (variations.includes(f.variation)) document.getElementById('variation').value = f.variation;
-            toggleCustomVariation();
+            const vSelect = document.getElementById('variation');
+            if (vSelect) {
+                if (variations.includes(f.variation)) vSelect.value = f.variation;
+                toggleCustomVariation();
+            }
 
-            document.getElementById('material').value = f.material;
-            document.getElementById('color-name').value = f.colorName;
-            document.getElementById('color-hex').value = f.colorHex;
-            document.getElementById('total-weight').value = f.totalWeight;
-            document.getElementById('current-weight').value = f.currentWeight;
-            document.getElementById('price').value = f.price;
-            document.getElementById('supplier').value = f.supplier === 'Desconhecido' ? '' : f.supplier;
-            document.getElementById('delivery-status').value = f.deliveryStatus || 'entregue';
-            document.getElementById('notes').value = f.notes || '';
+            const matSelect = document.getElementById('material');
+            if (matSelect) matSelect.value = f.material;
 
-            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500"></i> Editando Filamento`;
-            document.getElementById('submit-btn-text').textContent = 'Salvar Alterações';
+            const cName = document.getElementById('color-name');
+            if (cName) cName.value = f.colorName;
+
+            const cHex = document.getElementById('color-hex');
+            if (cHex) cHex.value = f.colorHex;
+
+            const tWeight = document.getElementById('total-weight');
+            if (tWeight) tWeight.value = f.totalWeight;
+
+            const curWeight = document.getElementById('current-weight');
+            if (curWeight) curWeight.value = f.currentWeight;
+
+            const prVal = document.getElementById('price');
+            if (prVal) prVal.value = f.price;
+
+            const suppVal = document.getElementById('supplier');
+            if (suppVal) suppVal.value = f.supplier === 'Desconhecido' ? '' : f.supplier;
+
+            const dStatus = document.getElementById('delivery-status');
+            if (dStatus) dStatus.value = f.deliveryStatus || 'entregue';
+
+            const notesVal = document.getElementById('notes');
+            if (notesVal) notesVal.value = f.notes || '';
+
+            const formTitle = document.getElementById('form-title');
+            if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500"></i> Editando Filamento`;
+
+            const btnTxt = document.getElementById('submit-btn-text');
+            if (btnTxt) btnTxt.textContent = 'Salvar Alterações';
+
             const cancelEditBtn = document.getElementById('cancel-edit-btn');
             if (cancelEditBtn) cancelEditBtn.classList.remove('hidden');
 
@@ -1761,10 +1849,16 @@
             const form = document.getElementById('filament-form');
             if (form) form.reset();
             document.getElementById('edit-id').value = '';
-            document.getElementById('color-hex').value = '#4f46e5';
+            
+            const colorHex = document.getElementById('color-hex');
+            if (colorHex) colorHex.value = '#4f46e5';
 
-            document.getElementById('form-title').innerHTML = `<i class="fa-solid fa-circle-plus text-indigo-500"></i> Cadastrar Filamento`;
-            document.getElementById('submit-btn-text').textContent = 'Cadastrar no Estoque';
+            const formTitle = document.getElementById('form-title');
+            if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-circle-plus text-indigo-500"></i> Cadastrar Filamento`;
+            
+            const btnTxt = document.getElementById('submit-btn-text');
+            if (btnTxt) btnTxt.textContent = 'Cadastrar no Estoque';
+            
             const cancelEditBtn = document.getElementById('cancel-edit-btn');
             if (cancelEditBtn) cancelEditBtn.classList.add('hidden');
             
@@ -1775,6 +1869,7 @@
 
         function excluirFilamento(id) {
             const f = filaments.find(item => item.id === id);
+            if (!f) return;
             showCustomConfirm(
                 "Remover Filamento",
                 `Você tem certeza absoluta que quer deletar o filamento "${f.colorName}" de seu estoque?`,
@@ -1863,7 +1958,8 @@
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('total-filtered-spending').textContent = `R$ ${totalSpent.toFixed(2).replace('.', ',')}`;
+            const spendEl = document.getElementById('total-filtered-spending');
+            if (spendEl) spendEl.textContent = `R$ ${totalSpent.toFixed(2).replace('.', ',')}`;
         }
 
         function limparFiltrosCompra() {
@@ -1916,12 +2012,8 @@
                                         </span>
                                     </div>
                                     <div class="flex gap-1 shrink-0">
-                                        <button onclick="prepararEdicaoSpec(${s.id})" class="bg-slate-850 hover:bg-slate-700 text-indigo-400 p-2 rounded-lg transition text-xs" title="Editar ficha técnica">
-                                            <i class="fa-solid fa-edit"></i>
-                                        </button>
-                                        <button onclick="excluirEspecificacao(${s.id})" class="bg-slate-850 hover:bg-rose-950/40 text-rose-400 p-2 rounded-lg transition text-xs" title="Remover ficha técnica">
-                                            <i class="fa-solid fa-trash"></i>
-                                        </button>
+                                        <button onclick="prepararEdicaoSpec(${s.id})" class="bg-slate-850 hover:bg-slate-700 text-indigo-400 p-2 rounded-lg transition text-xs" title="Editar"><i class="fa-solid fa-edit"></i></button>
+                                        <button onclick="excluirEspecificacao(${s.id})" class="bg-slate-850 hover:bg-rose-950/40 text-rose-400 p-2 rounded-lg transition text-xs" title="Deletar"><i class="fa-solid fa-trash"></i></button>
                                     </div>
                                 </div>
 
@@ -1991,7 +2083,7 @@
                     `;
                 });
 
-                const tableMarkup = `
+                container.innerHTML = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse min-w-[850px]" id="specs-table">
@@ -2011,7 +2103,6 @@
                         </div>
                     </div>
                 `;
-                container.innerHTML = tableMarkup;
             }
         }
 
@@ -2084,8 +2175,12 @@
             document.getElementById('spec-application').value = s.application;
             document.getElementById('spec-tips').value = s.tips || '';
 
-            document.getElementById('spec-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500 animate-pulse"></i> Modificar Ficha`;
-            document.getElementById('submit-spec-btn-text').textContent = 'Confirmar Modificação';
+            const title = document.getElementById('spec-form-title');
+            if (title) title.innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500 animate-pulse"></i> Modificar Ficha`;
+            
+            const btnTxt = document.getElementById('submit-spec-btn-text');
+            if (btnTxt) btnTxt.textContent = 'Confirmar Modificação';
+
             const cancelSpecBtn = document.getElementById('cancel-spec-edit-btn');
             if (cancelSpecBtn) cancelSpecBtn.classList.remove('hidden');
         }
@@ -2094,14 +2189,20 @@
             const form = document.getElementById('spec-form');
             if (form) form.reset();
             document.getElementById('spec-edit-id').value = '';
-            document.getElementById('spec-form-title').innerHTML = `<i class="fa-solid fa-graduation-cap text-indigo-500"></i> Ficha de Material`;
-            document.getElementById('submit-spec-btn-text').textContent = 'Salvar Parâmetros Técnicos';
+            
+            const title = document.getElementById('spec-form-title');
+            if (title) title.innerHTML = `<i class="fa-solid fa-graduation-cap text-indigo-500"></i> Ficha de Material`;
+            
+            const btnTxt = document.getElementById('submit-spec-btn-text');
+            if (btnTxt) btnTxt.textContent = 'Salvar Parâmetros Técnicos';
+
             const cancelSpecBtn = document.getElementById('cancel-spec-edit-btn');
             if (cancelSpecBtn) cancelSpecBtn.classList.add('hidden');
         }
 
         function excluirEspecificacao(id) {
             const s = specs.find(item => item.id === id);
+            if (!s) return;
             showCustomConfirm(
                 "Remover Ficha Técnica",
                 `Você tem certeza que deseja excluir as especificações físicas para ${s.material} ${s.variation}?`,
@@ -2174,8 +2275,13 @@
             document.getElementById('printer-name').value = p.name;
             document.getElementById('printer-watts').value = p.powerWatts;
             document.getElementById('printer-notes').value = p.notes || '';
-            document.getElementById('printer-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-emerald-500"></i> Editar Impressora`;
-            document.getElementById('submit-printer-btn-text').textContent = 'Salvar Alterações';
+
+            const formTitle = document.getElementById('printer-form-title');
+            if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-pen-to-square text-emerald-500"></i> Editar Impressora`;
+            
+            const btnTxt = document.getElementById('submit-printer-btn-text');
+            if (btnTxt) btnTxt.textContent = 'Salvar Alterações';
+
             const cancelPrinterBtn = document.getElementById('cancel-printer-edit-btn');
             if (cancelPrinterBtn) cancelPrinterBtn.classList.remove('hidden');
         }
@@ -2184,14 +2290,20 @@
             const form = document.getElementById('printer-form');
             if (form) form.reset();
             document.getElementById('edit-printer-id').value = '';
-            document.getElementById('printer-form-title').innerHTML = `<i class="fa-solid fa-circle-plus text-emerald-500"></i> Cadastrar Impressora`;
-            document.getElementById('submit-printer-btn-text').textContent = 'Salvar Impressora';
+            
+            const formTitle = document.getElementById('printer-form-title');
+            if (formTitle) formTitle.innerHTML = `<i class="fa-solid fa-circle-plus text-emerald-500"></i> Cadastrar Impressora`;
+            
+            const btnTxt = document.getElementById('submit-printer-btn-text');
+            if (btnTxt) btnTxt.textContent = 'Salvar Impressora';
+
             const cancelPrinterBtn = document.getElementById('cancel-printer-edit-btn');
             if (cancelPrinterBtn) cancelPrinterBtn.classList.add('hidden');
         }
 
         function excluirImpressora(id) {
             const p = printers.find(item => item.id === id);
+            if (!p) return;
             showCustomConfirm(
                 "Remover Impressora",
                 `Você quer realmente deletar a impressora "${p.name}"?`,
@@ -2251,7 +2363,7 @@
                     `;
                 });
 
-                const tableMarkup = `
+                container.innerHTML = `
                     <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse min-w-[500px]" id="printers-table">
@@ -2268,7 +2380,6 @@
                         </div>
                     </div>
                 `;
-                container.innerHTML = tableMarkup;
             }
         }
 
@@ -2294,21 +2405,28 @@
             document.getElementById('proj-filaments-container').innerHTML = '';
             document.getElementById('proj-extras-container').innerHTML = '';
             
-            document.getElementById('project-modal-title').innerHTML = `<i class="fa-solid fa-square-plus text-indigo-500"></i> Registrar Novo Projeto 3D`;
-            document.getElementById('project-submit-btn').textContent = "Deduzir e Criar Projeto";
+            const modalTitle = document.getElementById('project-modal-title');
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-square-plus text-indigo-500"></i> Registrar Novo Projeto 3D`;
+            
+            const submitBtn = document.getElementById('project-submit-btn');
+            if (submitBtn) submitBtn.textContent = "Deduzir e Criar Projeto";
 
             adicionarLinhaFilamento();
             
-            document.querySelector('input[name="proj-status"][value="sucesso"]').checked = true;
+            const successRadio = document.querySelector('input[name="proj-status"][value="sucesso"]');
+            if (successRadio) successRadio.checked = true;
+            
             setProjRating(5);
             toggleProjStatusFields();
 
             recalcularTotaisProjeto();
-            document.getElementById('project-modal').classList.remove('hidden');
+            const modal = document.getElementById('project-modal');
+            if (modal) modal.classList.remove('hidden');
         }
 
         function fecharModalProjeto() {
-            document.getElementById('project-modal').classList.add('hidden');
+            const modal = document.getElementById('project-modal');
+            if (modal) modal.classList.add('hidden');
         }
 
         function adicionarLinhaFilamento(savedId = null, savedWeight = null) {
@@ -2347,9 +2465,7 @@
                         <span class="filament-cost font-black text-indigo-400 text-xs sm:text-sm">R$ 0,00</span>
                     </div>
                     <div class="col-span-2 sm:col-span-1 flex justify-end">
-                        <button type="button" onclick="removerLinha('${rowId}')" class="text-rose-500 hover:text-rose-400 p-2 rounded-lg hover:bg-rose-950/20 transition mt-4 sm:mt-0" title="Remover plástico">
-                            <i class="fa-solid fa-trash-can text-sm sm:text-base"></i>
-                        </button>
+                        <button type="button" onclick="removerLinha('${rowId}')" class="text-rose-500 hover:text-rose-400 p-2 rounded-lg hover:bg-rose-950/20 transition mt-4 sm:mt-0"><i class="fa-solid fa-trash-can text-sm sm:text-base"></i></button>
                     </div>
                 </div>
             `;
@@ -2375,9 +2491,7 @@
                         <input type="number" step="0.01" min="0" placeholder="Ex: 1.50" value="${costVal}" oninput="recalcularTotaisProjeto()" required class="extra-cost w-full bg-slate-950 border border-slate-850 px-2.5 py-1.5 rounded-lg text-white text-center font-bold outline-none">
                     </div>
                     <div class="col-span-2 sm:col-span-1 flex justify-end">
-                        <button type="button" onclick="removerLinha('${rowId}')" class="text-rose-500 hover:text-rose-400 p-2 rounded-lg hover:bg-rose-950/20 transition mt-4 sm:mt-0" title="Remover extra">
-                            <i class="fa-solid fa-trash-can text-sm sm:text-base"></i>
-                        </button>
+                        <button type="button" onclick="removerLinha('${rowId}')" class="text-rose-500 hover:text-rose-400 p-2 rounded-lg hover:bg-rose-950/20 transition mt-4 sm:mt-0"><i class="fa-solid fa-trash-can text-sm sm:text-base"></i></button>
                     </div>
                 </div>
             `;
@@ -2394,10 +2508,12 @@
         }
 
         function toggleProjStatusFields() {
-            const status = document.querySelector('input[name="proj-status"]:checked').value;
+            const radios = document.querySelector('input[name="proj-status"]:checked');
+            const status = radios ? radios.value : 'sucesso';
             const successDiv = document.getElementById('proj-status-success');
             const failDiv = document.getElementById('proj-status-fail');
 
+            if (!successDiv || !failDiv) return;
             if (status === 'sucesso') {
                 successDiv.classList.remove('hidden');
                 failDiv.classList.add('hidden');
@@ -2408,7 +2524,8 @@
         }
 
         function setProjRating(val) {
-            document.getElementById('proj-rating').value = val;
+            const ratingInput = document.getElementById('proj-rating');
+            if (ratingInput) ratingInput.value = val;
             const starBtns = document.querySelectorAll('.proj-star-btn');
             starBtns.forEach((btn, idx) => {
                 if (idx < val) {
@@ -2441,7 +2558,7 @@
                         const rowCost = weight * (price / totalWeight);
                         totalFilamentsCost += rowCost;
 
-                        costDisplay.textContent = `R$ ${rowCost.toFixed(2).replace('.', ',')}`;
+                        if (costDisplay) costDisplay.textContent = `R$ ${rowCost.toFixed(2).replace('.', ',')}`;
                     }
                 }
             });
@@ -2467,12 +2584,17 @@
                 }
             });
 
-            document.getElementById('sum-filaments-cost').textContent = `R$ ${totalFilamentsCost.toFixed(2).replace('.', ',')}`;
-            document.getElementById('sum-extras-cost').textContent = `R$ ${totalExtrasCost.toFixed(2).replace('.', ',')}`;
-            document.getElementById('sum-energy-cost').textContent = `R$ ${totalEnergyCost.toFixed(2).replace('.', ',')}`;
+            const sumFil = document.getElementById('sum-filaments-cost');
+            const sumExt = document.getElementById('sum-extras-cost');
+            const sumEne = document.getElementById('sum-energy-cost');
+            const sumGrand = document.getElementById('sum-grand-total');
+
+            if (sumFil) sumFil.textContent = `R$ ${totalFilamentsCost.toFixed(2).replace('.', ',')}`;
+            if (sumExt) sumExt.textContent = `R$ ${totalExtrasCost.toFixed(2).replace('.', ',')}`;
+            if (sumEne) sumEne.textContent = `R$ ${totalEnergyCost.toFixed(2).replace('.', ',')}`;
             
             const grandTotal = totalFilamentsCost + totalExtrasCost + totalEnergyCost;
-            document.getElementById('sum-grand-total').textContent = `R$ ${grandTotal.toFixed(2).replace('.', ',')}`;
+            if (sumGrand) sumGrand.textContent = `R$ ${grandTotal.toFixed(2).replace('.', ',')}`;
         }
 
         async function confirmarProjeto(event) {
@@ -2483,8 +2605,12 @@
             const notes = document.getElementById('proj-notes').value.trim();
             const durationHours = Number(document.getElementById('proj-time-hours').value) || 0;
             const durationMinutes = Number(document.getElementById('proj-time-minutes').value) || 0;
-            const status = document.querySelector('input[name="proj-status"]:checked').value;
-            const rating = status === 'sucesso' ? Number(document.getElementById('proj-rating').value) : 0;
+            
+            const radios = document.querySelector('input[name="proj-status"]:checked');
+            const status = radios ? radios.value : 'sucesso';
+            
+            const ratingInput = document.getElementById('proj-rating');
+            const rating = status === 'sucesso' ? Number(ratingInput ? ratingInput.value : 5) : 0;
             const failureReason = status === 'falha' ? document.getElementById('proj-failure-reason').value : '';
 
             const printerSelect = document.getElementById('proj-printer-select');
@@ -2598,7 +2724,6 @@
             const totalExtraCost = extraCosts.reduce((acc, e) => acc + e.cost, 0);
             const grandTotalCost = totalFilamentCost + totalExtraCost + calculatedEnergyCost;
 
-            // Gravando logs com o e-mail do operador atual caso esteja logado
             const activeUserEmail = currentUser ? currentUser.email : "Modo Local";
             const extendedNotes = `[Operador: ${activeUserEmail}] ${notes}`;
 
@@ -2669,7 +2794,8 @@
             atualizarPainel();
             showToast(`Projeto "${name}" gravado com sucesso.`);
 
-            if (!document.getElementById('tab-prints').classList.contains('hidden')) {
+            const tabPr = document.getElementById('tab-prints');
+            if (tabPr && !tabPr.classList.contains('hidden')) {
                 renderizarHistoricoPrints();
                 atualizarMetricasConfiabilidade();
             }
@@ -2687,10 +2813,13 @@
                 });
             }
 
-            document.getElementById('project-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500 animate-pulse"></i> Editar Projeto 3D`;
-            document.getElementById('project-submit-btn').textContent = "Confirmar Alterações";
+            const modalTitle = document.getElementById('project-modal-title');
+            if (modalTitle) modalTitle.innerHTML = `<i class="fa-solid fa-pen-to-square text-indigo-500 animate-pulse"></i> Editar Projeto 3D`;
+            
+            const submitBtn = document.getElementById('project-submit-btn');
+            if (submitBtn) submitBtn.textContent = "Confirmar Alterações";
+            
             document.getElementById('proj-edit-id').value = project.id;
-
             document.getElementById('proj-name').value = project.pieceName;
             
             let rawNotes = project.notes || '';
@@ -2720,16 +2849,20 @@
             }
 
             if (project.status === 'sucesso') {
-                document.querySelector('input[name="proj-status"][value="sucesso"]').checked = true;
+                const sRadio = document.querySelector('input[name="proj-status"][value="sucesso"]');
+                if (sRadio) sRadio.checked = true;
                 setProjRating(project.rating || 5);
             } else {
-                document.querySelector('input[name="proj-status"][value="falha"]').checked = true;
-                document.getElementById('proj-failure-reason').value = project.failureReason || 'Descolamento da Mesa (Warping)';
+                const fRadio = document.querySelector('input[name="proj-status"][value="falha"]');
+                if (fRadio) fRadio.checked = true;
+                const fReason = document.getElementById('proj-failure-reason');
+                if (fReason) fReason.value = project.failureReason || 'Descolamento da Mesa (Warping)';
             }
             toggleProjStatusFields();
             recalcularTotaisProjeto();
 
-            document.getElementById('project-modal').classList.remove('hidden');
+            const modal = document.getElementById('project-modal');
+            if (modal) modal.classList.remove('hidden');
         }
 
         function excluirProjeto(id) {
@@ -2900,18 +3033,22 @@
             if (statTotalPrints) statTotalPrints.textContent = total;
 
             if (total === 0) {
-                document.getElementById('stat-print-success-rate').textContent = '0.0%';
-                document.getElementById('stat-main-failure-reason').textContent = 'Nenhuma';
+                const printS = document.getElementById('stat-print-success-rate');
+                const mainF = document.getElementById('stat-main-failure-reason');
+                if (printS) printS.textContent = '0.0%';
+                if (mainF) mainF.textContent = 'Nenhuma';
                 return;
             }
 
             const sucessos = printHistory.filter(h => h.status === 'sucesso').length;
             const successRate = (sucessos / total) * 100;
-            document.getElementById('stat-print-success-rate').textContent = `${successRate.toFixed(1)}%`;
+            const successEl = document.getElementById('stat-print-success-rate');
+            if (successEl) successEl.textContent = `${successRate.toFixed(1)}%`;
 
             const falhas = printHistory.filter(h => h.status === 'falha');
             if (falhas.length === 0) {
-                document.getElementById('stat-main-failure-reason').textContent = 'Nenhuma';
+                const failEl = document.getElementById('stat-main-failure-reason');
+                if (failEl) failEl.textContent = 'Nenhuma';
                 return;
             }
 
@@ -2930,7 +3067,8 @@
                 }
             }
 
-            document.getElementById('stat-main-failure-reason').textContent = `${mainFailure} (${maxCount}x)`;
+            const fReasonEl = document.getElementById('stat-main-failure-reason');
+            if (fReasonEl) fReasonEl.textContent = `${mainFailure} (${maxCount}x)`;
         }
 
         function limparHistorico() {
@@ -3081,8 +3219,330 @@
             if (isNaN(d.getTime())) return dateString;
             return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
         }
+
+        function showCustomConfirm(title, message, onConfirm) {
+            const modal = document.getElementById('confirm-modal');
+            const titleEl = document.getElementById('confirm-title');
+            const messageEl = document.getElementById('confirm-message');
+            const btnCancel = document.getElementById('confirm-btn-cancel');
+            const btnOk = document.getElementById('confirm-btn-ok');
+
+            if (!modal || !titleEl || !messageEl || !btnCancel || !btnOk) return;
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            modal.classList.remove('hidden');
+
+            const cleanUp = () => {
+                modal.classList.add('hidden');
+                btnCancel.removeEventListener('click', onCancel);
+                btnOk.removeEventListener('click', onOk);
+            };
+            const onCancel = () => cleanUp();
+            const onOk = () => { cleanUp(); onConfirm(); };
+
+            btnCancel.addEventListener('click', onCancel);
+            btnOk.addEventListener('click', onOk);
+        }
+
+        function inicializarSupabaseConexao(key) {
+            const url = "https://ltnzbvksbdbsbjkhgeyy.supabase.co";
+            try {
+                if (typeof supabase === 'undefined') {
+                    throw new Error("A biblioteca do Supabase não pôde ser carregada pelo seu navegador. Verifique sua conexão ou extensões de bloqueio de anúncios.");
+                }
+                supabaseClient = supabase.createClient(url, key);
+                supabaseClient.auth.onAuthStateChange((event, session) => {
+                    if (session) {
+                        currentUser = session.user;
+                        const authEl = document.getElementById('auth-overlay');
+                        if (authEl) authEl.classList.add('hidden');
+                        
+                        const logoutEl = document.getElementById('logout-btn');
+                        if (logoutEl) logoutEl.classList.remove('hidden');
+                        
+                        const badge = document.getElementById('cloud-status-badge');
+                        const dot = document.getElementById('cloud-status-dot');
+                        const text = document.getElementById('cloud-status-text');
+                        
+                        if (badge) {
+                            badge.classList.remove('hidden');
+                            badge.classList.add('flex');
+                        }
+                        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block";
+                        if (text) text.textContent = "Sincronizado na Nuvem";
+                        
+                        const headerSub = document.getElementById('header-subtitle');
+                        if (headerSub) headerSub.textContent = `Oficina: ${currentUser.email}`;
+
+                        baixarDadosDaNuvem();
+                    } else {
+                        currentUser = null;
+                        const authEl = document.getElementById('auth-overlay');
+                        if (authEl) authEl.classList.remove('hidden');
+                        
+                        const logoutEl = document.getElementById('logout-btn');
+                        if (logoutEl) logoutEl.classList.add('hidden');
+                        
+                        alternarModoAuth('login');
+                    }
+                });
+            } catch (err) {
+                console.error(err);
+                showToast(err.message || "Erro ao conectar ao Supabase.", "error");
+                carregarModoLocal();
+            }
+        }
+
+        async function salvarConfiguracaoSupabase(exibirFeedbacks = true) {
+            const keyEl = document.getElementById('supabase-key-input');
+            if (!keyEl) return;
+            const key = keyEl.value.trim();
+            if (!key) {
+                if (exibirFeedbacks) showToast("Insira a chave Anon do Supabase primeiro!", "error");
+                return;
+            }
+            localStorage.setItem('supabase_key_db', key);
+            inicializarSupabaseConexao(key);
+            if (exibirFeedbacks) showToast("Configuração salva. Faça o login para acessar seus dados.");
+        }
+
+        function desconectarSupabaseLocal() {
+            showCustomConfirm(
+                "Desconectar Banco de Dados",
+                "Tem certeza que deseja sair do Supabase e voltar para o Modo Local Offline? Suas chaves locais serão limpas.",
+                () => {
+                    localStorage.removeItem('supabase_key_db');
+                    const keyInput = document.getElementById('supabase-key-input');
+                    if (keyInput) keyInput.value = '';
+                    supabaseClient = null;
+                    carregarModoLocal();
+                    showToast("Desconectado do Supabase. Operando em modo offline.");
+                }
+            );
+        }
+
+        async function realizarAutenticacao(event) {
+            event.preventDefault();
+            if (!supabaseClient) return;
+
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value;
+
+            try {
+                if (authMode === 'login') {
+                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+                    if (error) throw error;
+                    showToast("Bem-vindo de volta à sua oficina!");
+                } else {
+                    const { data, error } = await supabaseClient.auth.signUp({ email, password });
+                    if (error) throw error;
+                    showToast("Cadastro realizado com sucesso!");
+                }
+            } catch (err) {
+                console.error(err);
+                showToast("Erro na autenticação: " + err.message, "error");
+            }
+        }
+
+        async function deslogarUsuario() {
+            if (!supabaseClient) return;
+            showCustomConfirm(
+                "Sair da Oficina",
+                "Tem certeza que deseja encerrar sua sessão atual na nuvem?",
+                async () => {
+                    await supabaseClient.auth.signOut();
+                    showToast("Sessão encerrada com sucesso!");
+                }
+            );
+        }
+
+        function alternarModoAuth(forcedMode = null) {
+            const title = document.getElementById('auth-title');
+            const btnText = document.getElementById('auth-btn-text');
+            const switchBtn = document.getElementById('auth-switch-btn');
+
+            if (!title || !btnText || !switchBtn) return;
+
+            if (forcedMode) authMode = forcedMode;
+            else authMode = authMode === 'login' ? 'cadastro' : 'login';
+
+            if (authMode === 'login') {
+                title.textContent = "Acesse sua Oficina";
+                btnText.textContent = "Entrar na Oficina";
+                switchBtn.textContent = "Não tem uma conta? Cadastre-se gratuitamente!";
+            } else {
+                title.textContent = "Crie sua Conta Segura";
+                btnText.textContent = "Cadastrar Nova Conta";
+                switchBtn.textContent = "Já tem cadastro? Acesse sua conta!";
+            }
+        }
+
+        async function uploadDadosParaNuvem() {
+            if (!supabaseClient || !currentUser) return;
+            try {
+                if (filaments.length > 0) {
+                    const filamentsPayload = filaments.map(f => ({
+                        id: f.id, user_id: currentUser.id, brand: f.brand, material: f.material, variation: f.variation,
+                        color_name: f.colorName, color_hex: f.colorHex, total_weight: f.totalWeight,
+                        current_weight: f.currentWeight, price: f.price, supplier: f.supplier,
+                        notes: f.notes, delivery_status: f.deliveryStatus, date: f.date
+                    }));
+                    await supabaseClient.from('filaments').upsert(filamentsPayload);
+                }
+
+                if (printers.length > 0) {
+                    const printersPayload = printers.map(p => ({
+                        id: p.id, user_id: currentUser.id, name: p.name, power_watts: p.powerWatts, notes: p.notes
+                    }));
+                    await supabaseClient.from('printers').upsert(printersPayload);
+                }
+
+                if (specs.length > 0) {
+                    const specsPayload = specs.map(s => ({
+                        id: s.id, user_id: currentUser.id, material: s.material, variation: s.variation,
+                        humidity: s.humidity, thermal: s.thermal, temps: s.temps,
+                        application: s.application, tips: s.tips
+                    }));
+                    await supabaseClient.from('specs').upsert(specsPayload);
+                }
+
+                if (printHistory.length > 0) {
+                    const printPayload = printHistory.map(h => ({
+                        id: h.id, user_id: currentUser.id, piece_name: h.pieceName, notes: h.notes, date: h.date,
+                        status: h.status, rating: h.rating, failure_reason: h.failureReason,
+                        duration_hours: h.durationHours, duration_minutes: h.durationMinutes,
+                        printer_id: h.printerId, printer_name: h.printerName, printer_watts: h.printerWatts,
+                        energy_cost: h.energyCost, energy_rate: h.energyRate,
+                        filaments_used: h.filamentsUsed, extra_costs: h.extraCosts,
+                        total_filament_cost: h.totalFilamentCost, total_extra_cost: h.totalExtraCost,
+                        grand_total_cost: h.grandTotalCost
+                    }));
+                    await supabaseClient.from('print_history').upsert(printPayload);
+                }
+
+                showToast("Dados enviados para a nuvem com sucesso!");
+            } catch (err) {
+                console.error(err);
+                showToast("Erro no envio para nuvem: " + err.message, "error");
+            }
+        }
+
+        async function baixarDadosDaNuvem() {
+            if (!supabaseClient || !currentUser) return;
+            try {
+                const { data: remoteFils } = await supabaseClient.from('filaments').select('*');
+                const { data: remotePrinters } = await supabaseClient.from('printers').select('*');
+                const { data: remoteSpecs } = await supabaseClient.from('specs').select('*');
+                const { data: remoteHistory } = await supabaseClient.from('print_history').select('*');
+
+                if (remoteFils) {
+                    filaments = remoteFils.map(f => ({
+                        id: Number(f.id), brand: f.brand, material: f.material, variation: f.variation,
+                        colorName: f.color_name, colorHex: f.color_hex, totalWeight: Number(f.total_weight),
+                        currentWeight: Number(f.current_weight), price: Number(f.price), supplier: f.supplier,
+                        notes: f.notes, deliveryStatus: f.delivery_status, date: f.date
+                    }));
+                    localStorage.setItem('filament_db', JSON.stringify(filaments));
+                }
+
+                if (remotePrinters) {
+                    printers = remotePrinters.map(p => ({
+                        id: Number(p.id), name: p.name, powerWatts: Number(p.power_watts), notes: p.notes
+                    }));
+                    localStorage.setItem('printers_db', JSON.stringify(printers));
+                }
+
+                if (remoteSpecs) {
+                    specs = remoteSpecs.map(s => ({
+                        id: Number(s.id), material: s.material, variation: s.variation,
+                        humidity: s.humidity, thermal: s.thermal, temps: s.temps,
+                        application: s.application, tips: s.tips
+                    }));
+                    localStorage.setItem('specs_db', JSON.stringify(specs));
+                }
+
+                if (remoteHistory) {
+                    printHistory = remoteHistory.map(h => ({
+                        id: Number(h.id), pieceName: h.piece_name, notes: h.notes, date: h.date,
+                        status: h.status, rating: h.rating, failureReason: h.failure_reason,
+                        durationHours: Number(h.duration_hours), durationMinutes: Number(h.duration_minutes),
+                        printerId: h.printer_id ? Number(h.printer_id) : null,
+                        printerName: h.printer_name, printerWatts: h.printer_watts ? Number(h.printer_watts) : null,
+                        energyCost: Number(h.energy_cost), energyRate: Number(h.energy_rate),
+                        filamentsUsed: h.filaments_used, extraCosts: h.extra_costs,
+                        totalFilamentCost: Number(h.total_filament_cost), totalExtraCost: Number(h.total_extra_cost),
+                        grandTotalCost: Number(h.grand_total_cost)
+                    }));
+                    localStorage.setItem('print_history_db', JSON.stringify(printHistory));
+                }
+
+                carregarEstadosAuxiliares();
+                showToast("Sincronização com nuvem concluída!");
+
+            } catch (err) {
+                console.error(err);
+                showToast("Erro ao sincronizar dados da nuvem: " + err.message, "error");
+            }
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+            const toast = document.createElement('div');
+            
+            let bgClass = 'bg-slate-900 border-indigo-500 text-indigo-400';
+            let icon = '<i class="fa-solid fa-circle-check"></i>';
+            
+            if (type === 'error') {
+                bgClass = 'bg-slate-900 border-rose-500 text-rose-500';
+                icon = '<i class="fa-solid fa-circle-exclamation"></i>';
+            } else if (type === 'warning') {
+                bgClass = 'bg-slate-900 border-amber-500 text-amber-500';
+                icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
+            }
+
+            toast.className = `flex items-center gap-3 p-4 rounded-xl border ${bgClass} shadow-2xl transition duration-300 transform translate-y-2 pointer-events-auto max-w-sm w-full`;
+            toast.innerHTML = `
+                <div class="text-lg shrink-0">${icon}</div>
+                <div class="text-xs font-bold">${message}</div>
+            `;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-transparent text-slate-400 hover:text-white hover:bg-slate-900/50 transition-all flex items-center gap-2 whitespace-nowrap";
+            });
+
+            const tabEl = document.getElementById(tabId);
+            if (tabEl) tabEl.classList.remove('hidden');
+            
+            const activeBtn = document.getElementById(`btn-${tabId}`);
+            if (activeBtn) {
+                activeBtn.className = "tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600/10 text-indigo-400 border border-indigo-500/30 transition-all flex items-center gap-2 whitespace-nowrap";
+            }
+
+            if (tabId === 'tab-purchases') {
+                popularFiltrosCompra();
+                renderizarHistoricoCompras();
+            } else if (tabId === 'tab-prints') {
+                renderizarHistoricoPrints();
+                atualizarMetricasConfiabilidade();
+            } else if (tabId === 'tab-printers') {
+                renderizarParqueImpressoras();
+            } else if (tabId === 'tab-specs') {
+                renderizarEspecificacoes();
+            }
+        }
     </script>
 </body>
 </html>
-```
-eof
