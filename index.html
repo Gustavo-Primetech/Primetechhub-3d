@@ -145,7 +145,7 @@
                     </div>
 
                     <!-- Botão de Sair (Auth) -->
-                    <button id="logout-btn" onclick="deslogarUsuario()" class="hidden px-2.5 py-1.5 text-xs font-semibold bg-rose-950/40 border border-rose-900/35 hover:bg-rose-900/40 text-rose-400 rounded-lg transition duration-200 flex items-center gap-1.5" title="Sair da Conta">
+                    <button id="logout-btn" onclick="deslogarUsuario()" class="hidden px-2.5 py-1.5 text-xs font-semibold bg-rose-950/40 border border-rose-900/35 hover:bg-rose-950/40 text-rose-400 rounded-lg transition duration-200 flex items-center gap-1.5" title="Sair da Conta">
                         <i class="fa-solid fa-right-from-bracket"></i> <span class="hidden md:inline">Sair</span>
                     </button>
 
@@ -640,19 +640,16 @@
                         <form id="printer-form" onsubmit="salvarImpressora(event)" class="space-y-4">
                             <input type="hidden" id="edit-printer-id" value="">
                             
-                            <!-- Modelo / Nome -->
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Modelo da Máquina</label>
                                 <input type="text" id="printer-name" required placeholder="Ex: Creality Ender 3 S1" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2.5 text-sm text-white transition outline-none">
                             </div>
 
-                            <!-- Consumo Watts -->
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Consumo Estimado (Watts)</label>
                                 <input type="number" id="printer-watts" required min="1" placeholder="Ex: 350" class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2.5 text-sm text-white transition outline-none">
                             </div>
 
-                            <!-- Observações -->
                             <div>
                                 <label class="block text-[10px] sm:text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">Notes e Bicos Instalados</label>
                                 <textarea id="printer-notes" rows="3" placeholder="Anotações sobre upgrades, manutenções ou diâmetro de bicos..." class="w-full bg-slate-950 border border-slate-800 focus:border-indigo-500 rounded-lg px-3 py-2.5 text-sm text-white transition resize-none"></textarea>
@@ -1043,335 +1040,12 @@
             }
         }
 
-        function showCustomConfirm(title, message, onConfirm) {
-            const modal = document.getElementById('confirm-modal');
-            const titleEl = document.getElementById('confirm-title');
-            const messageEl = document.getElementById('confirm-message');
-            const btnCancel = document.getElementById('confirm-btn-cancel');
-            const btnOk = document.getElementById('confirm-btn-ok');
-
-            titleEl.textContent = title;
-            messageEl.textContent = message;
-            modal.classList.remove('hidden');
-
-            const cleanUp = () => {
-                modal.classList.add('hidden');
-                btnCancel.removeEventListener('click', onCancel);
-                btnOk.removeEventListener('click', onOk);
-            };
-            const onCancel = () => cleanUp();
-            const onOk = () => { cleanUp(); onConfirm(); };
-
-            btnCancel.addEventListener('click', onCancel);
-            btnOk.addEventListener('click', onOk);
-        }
-
-        // CONTROLADOR DE CONEXÃO SUPABASE
-        function inicializarSupabaseConexao(key) {
-            const url = "https://ltnzbvksbdbsbjkhgeyy.supabase.co";
-            try {
-                supabaseClient = supabase.createClient(url, key);
-                
-                supabaseClient.auth.onAuthStateChange((event, session) => {
-                    if (session) {
-                        currentUser = session.user;
-                        document.getElementById('auth-overlay').classList.add('hidden');
-                        document.getElementById('logout-btn').classList.remove('hidden');
-                        
-                        const badge = document.getElementById('cloud-status-badge');
-                        const dot = document.getElementById('cloud-status-dot');
-                        const text = document.getElementById('cloud-status-text');
-                        badge.classList.remove('hidden');
-                        badge.classList.add('flex');
-                        dot.className = "w-2 h-2 rounded-full bg-emerald-500 inline-block";
-                        text.textContent = "Sincronizado na Nuvem";
-                        document.getElementById('header-subtitle').textContent = `Oficina: ${currentUser.email}`;
-
-                        verificarPrimeiraSincronizacao();
-                    } else {
-                        currentUser = null;
-                        document.getElementById('auth-overlay').classList.remove('hidden');
-                        document.getElementById('logout-btn').classList.add('hidden');
-                        alternarModoAuth('login');
-                    }
-                });
-
-            } catch (err) {
-                console.error(err);
-                showToast("Erro ao conectar à API do Supabase.", "error");
-                carregarModoLocal();
-            }
-        }
-
-        async function salvarConfiguracaoSupabase(exibirFeedbacks = true) {
-            const key = document.getElementById('supabase-key-input').value.trim();
-            if (!key) {
-                if (exibirFeedbacks) showToast("Insira a chave Anon do Supabase primeiro!", "error");
-                return;
-            }
-            localStorage.setItem('supabase_key_db', key);
-            inicializarSupabaseConexao(key);
-            if (exibirFeedbacks) showToast("Configuração salva. Faça o login para acessar os dados.");
-        }
-
-        function desconectarSupabaseLocal() {
-            showCustomConfirm(
-                "Desconectar Banco de Dados",
-                "Tem certeza que deseja sair do Supabase e voltar para o Modo Local Offline? Suas chaves serão limpas.",
-                () => {
-                    localStorage.removeItem('supabase_key_db');
-                    document.getElementById('supabase-key-input').value = '';
-                    supabaseClient = null;
-                    carregarModoLocal();
-                    showToast("Desconectado do Supabase. Operando em modo offline.");
-                }
-            );
-        }
-
-        async function realizarAutenticacao(event) {
-            event.preventDefault();
-            if (!supabaseClient) return;
-
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-
-            try {
-                if (authMode === 'login') {
-                    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
-                    if (error) throw error;
-                    showToast("Bem-vindo de volta à sua oficina!");
-                } else {
-                    const { data, error } = await supabaseClient.auth.signUp({ email, password });
-                    if (error) throw error;
-                    showToast("Cadastro realizado! Faça login para acessar.");
-                    alternarModoAuth('login');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast("Erro na autenticação: " + err.message, "error");
-            }
-        }
-
-        async function deslogarUsuario() {
-            if (!supabaseClient) return;
-            showCustomConfirm(
-                "Sair da Oficina",
-                "Tem certeza que deseja encerrar sua sessão atual na nuvem?",
-                async () => {
-                    await supabaseClient.auth.signOut();
-                    showToast("Sessão encerrada com sucesso!");
-                }
-            );
-        }
-
-        function alternarModoAuth(forcedMode = null) {
-            const title = document.getElementById('auth-title');
-            const btnText = document.getElementById('auth-btn-text');
-            const switchBtn = document.getElementById('auth-switch-btn');
-
-            if (forcedMode) authMode = forcedMode;
-            else authMode = authMode === 'login' ? 'cadastro' : 'login';
-
-            if (authMode === 'login') {
-                title.textContent = "Acesse sua Oficina";
-                btnText.textContent = "Entrar na Oficina";
-                switchBtn.textContent = "Não tem uma conta? Cadastre-se gratuitamente!";
-            } else {
-                title.textContent = "Crie sua Conta Segura";
-                btnText.textContent = "Cadastrar Nova Conta";
-                switchBtn.textContent = "Já tem cadastro? Acesse sua conta!";
-            }
-        }
-
-        async function verificarPrimeiraSincronizacao() {
-            if (!supabaseClient || !currentUser) return;
-
-            const { data: remoteFils } = await supabaseClient.from('filaments').select('id');
-            
-            if (remoteFils && remoteFils.length === 0 && filaments.length > 0) {
-                showCustomConfirm(
-                    "Enviar Estoque Local",
-                    "Seu banco na nuvem está vazio para este usuário. Deseja enviar seus filamentos, impressoras, especificações e projetos locais salvos para a nuvem?",
-                    async () => {
-                        showToast("Sincronizando...", "warning");
-                        await uploadDadosParaNuvem();
-                    }
-                );
-            } else {
-                await baixarDadosDaNuvem();
-            }
-        }
-
-        async function uploadDadosParaNuvem() {
-            if (!supabaseClient || !currentUser) return;
-            try {
-                if (filaments.length > 0) {
-                    const filamentsPayload = filaments.map(f => ({
-                        id: f.id, user_id: currentUser.id, brand: f.brand, material: f.material, variation: f.variation,
-                        color_name: f.colorName, color_hex: f.colorHex, total_weight: f.totalWeight,
-                        current_weight: f.currentWeight, price: f.price, supplier: f.supplier,
-                        notes: f.notes, delivery_status: f.deliveryStatus, date: f.date
-                    }));
-                    await supabaseClient.from('filaments').upsert(filamentsPayload);
-                }
-
-                if (printers.length > 0) {
-                    const printersPayload = printers.map(p => ({
-                        id: p.id, user_id: currentUser.id, name: p.name, power_watts: p.powerWatts, notes: p.notes
-                    }));
-                    await supabaseClient.from('printers').upsert(printersPayload);
-                }
-
-                if (specs.length > 0) {
-                    const specsPayload = specs.map(s => ({
-                        id: s.id, user_id: currentUser.id, material: s.material, variation: s.variation,
-                        humidity: s.humidity, thermal: s.thermal, temps: s.temps,
-                        application: s.application, tips: s.tips
-                    }));
-                    await supabaseClient.from('specs').upsert(specsPayload);
-                }
-
-                if (printHistory.length > 0) {
-                    const printPayload = printHistory.map(h => ({
-                        id: h.id, user_id: currentUser.id, piece_name: h.pieceName, notes: h.notes, date: h.date,
-                        status: h.status, rating: h.rating, failure_reason: h.failureReason,
-                        duration_hours: h.durationHours, duration_minutes: h.durationMinutes,
-                        printer_id: h.printerId, printer_name: h.printerName, printer_watts: h.printerWatts,
-                        energy_cost: h.energyCost, energy_rate: h.energyRate,
-                        filaments_used: h.filamentsUsed, extra_costs: h.extraCosts,
-                        total_filament_cost: h.totalFilamentCost, total_extra_cost: h.totalExtraCost,
-                        grand_total_cost: h.grandTotalCost
-                    }));
-                    await supabaseClient.from('print_history').upsert(printPayload);
-                }
-
-                showToast("Dados enviados para a nuvem com sucesso!");
-            } catch (err) {
-                console.error(err);
-                showToast("Erro no envio para nuvem: " + err.message, "error");
-            }
-        }
-
-        async function baixarDadosDaNuvem() {
-            if (!supabaseClient || !currentUser) return;
-            try {
-                const { data: remoteFils } = await supabaseClient.from('filaments').select('*');
-                const { data: remotePrinters } = await supabaseClient.from('printers').select('*');
-                const { data: remoteSpecs } = await supabaseClient.from('specs').select('*');
-                const { data: remoteHistory } = await supabaseClient.from('print_history').select('*');
-
-                if (remoteFils) {
-                    filaments = remoteFils.map(f => ({
-                        id: Number(f.id), brand: f.brand, material: f.material, variation: f.variation,
-                        colorName: f.color_name, colorHex: f.color_hex, totalWeight: Number(f.total_weight),
-                        currentWeight: Number(f.current_weight), price: Number(f.price), supplier: f.supplier,
-                        notes: f.notes, deliveryStatus: f.delivery_status, date: f.date
-                    }));
-                    localStorage.setItem('filament_db', JSON.stringify(filaments));
-                }
-
-                if (remotePrinters) {
-                    printers = remotePrinters.map(p => ({
-                        id: Number(p.id), name: p.name, powerWatts: Number(p.power_watts), notes: p.notes
-                    }));
-                    localStorage.setItem('printers_db', JSON.stringify(printers));
-                }
-
-                if (remoteSpecs) {
-                    specs = remoteSpecs.map(s => ({
-                        id: Number(s.id), material: s.material, variation: s.variation,
-                        humidity: s.humidity, thermal: s.thermal, temps: s.temps,
-                        application: s.application, tips: s.tips
-                    }));
-                    localStorage.setItem('specs_db', JSON.stringify(specs));
-                }
-
-                if (remoteHistory) {
-                    printHistory = remoteHistory.map(h => ({
-                        id: Number(h.id), pieceName: h.piece_name, notes: h.notes, date: h.date,
-                        status: h.status, rating: h.rating, failureReason: h.failure_reason,
-                        durationHours: Number(h.duration_hours), durationMinutes: Number(h.duration_minutes),
-                        printerId: h.printer_id ? Number(h.printer_id) : null,
-                        printerName: h.printer_name, printerWatts: h.printer_watts ? Number(h.printer_watts) : null,
-                        energyCost: Number(h.energy_cost), energyRate: Number(h.energy_rate),
-                        filamentsUsed: h.filaments_used, extraCosts: h.extra_costs,
-                        totalFilamentCost: Number(h.total_filament_cost), totalExtraCost: Number(h.total_extra_cost),
-                        grandTotalCost: Number(h.grand_total_cost)
-                    }));
-                    localStorage.setItem('print_history_db', JSON.stringify(printHistory));
-                }
-
-                carregarEstadosAuxiliares();
-                showToast("Sincronização com nuvem concluída!");
-
-            } catch (err) {
-                console.error(err);
-                showToast("Erro ao sincronizar dados da nuvem: " + err.message, "error");
-            }
-        }
-
-        // TOAST NOTIFICATIONS
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            let bgClass = 'bg-slate-900 border-indigo-500 text-indigo-400';
-            let icon = '<i class="fa-solid fa-circle-check"></i>';
-            
-            if (type === 'error') {
-                bgClass = 'bg-slate-900 border-rose-500 text-rose-500';
-                icon = '<i class="fa-solid fa-circle-exclamation"></i>';
-            } else if (type === 'warning') {
-                bgClass = 'bg-slate-900 border-amber-500 text-amber-500';
-                icon = '<i class="fa-solid fa-triangle-exclamation"></i>';
-            }
-
-            toast.className = `flex items-center gap-3 p-4 rounded-xl border ${bgClass} shadow-2xl transition duration-300 transform translate-y-2 pointer-events-auto max-w-sm w-full`;
-            toast.innerHTML = `
-                <div class="text-lg shrink-0">${icon}</div>
-                <div class="text-xs font-bold">${message}</div>
-            `;
-            
-            container.appendChild(toast);
-            
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'translate-y-0');
-                setTimeout(() => toast.remove(), 300);
-            }, 3500);
-        }
-
-        // ABA SWITCHING
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-content').forEach(content => {
-                content.classList.add('hidden');
-            });
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.className = "tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold border border-transparent text-slate-400 hover:text-white hover:bg-slate-900/50 transition-all flex items-center gap-2 whitespace-nowrap";
-            });
-
-            document.getElementById(tabId).classList.remove('hidden');
-            
-            const activeBtn = document.getElementById(`btn-${tabId}`);
-            if (activeBtn) {
-                activeBtn.className = "tab-btn shrink-0 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-indigo-600/10 text-indigo-400 border border-indigo-500/30 transition-all flex items-center gap-2 whitespace-nowrap";
-            }
-
-            if (tabId === 'tab-purchases') {
-                popularFiltrosCompra();
-                renderizarHistoricoCompras();
-            } else if (tabId === 'tab-prints') {
-                renderizarHistoricoPrints();
-                atualizarMetricasConfiabilidade();
-            } else if (tabId === 'tab-printers') {
-                renderizarParqueImpressoras();
-            } else if (tabId === 'tab-specs') {
-                renderizarEspecificacoes();
-            }
-        }
-
         function popularSelectMarcas() {
             const select = document.getElementById('brand-select');
             if (!select) return;
+            
+            // Memoriza a seleção atual do usuário para evitar resets durante sincronizações
+            const currentValue = select.value;
             select.innerHTML = '';
             
             brands.sort().forEach(brand => {
@@ -1385,6 +1059,11 @@
             optOutro.value = "_outro_";
             optOutro.textContent = "+ Outro (Adicionar Novo...)";
             select.appendChild(optOutro);
+
+            // Restaura a seleção se ela ainda existir nas novas opções
+            if (currentValue && Array.from(select.options).some(o => o.value === currentValue)) {
+                select.value = currentValue;
+            }
 
             toggleCustomBrand();
         }
@@ -1406,6 +1085,9 @@
         function popularSelectVariacoes() {
             const select = document.getElementById('variation');
             if (!select) return;
+            
+            // Memoriza a variação ativa antes de recriar as opções do seletor
+            const currentValue = select.value;
             select.innerHTML = '';
             
             variations.sort().forEach(v => {
@@ -1419,6 +1101,11 @@
             optOutro.value = "_outro_";
             optOutro.textContent = "+ Outra Variação...";
             select.appendChild(optOutro);
+
+            // Restaura o estado anterior do dropdown de forma invisível
+            if (currentValue && Array.from(select.options).some(o => o.value === currentValue)) {
+                select.value = currentValue;
+            }
 
             toggleCustomVariation();
         }
@@ -1468,10 +1155,15 @@
 
             const formMat = document.getElementById('material');
             if (formMat) {
+                // Impede que o material do formulário resete para PLA involuntariamente
+                const currentMatVal = formMat.value;
                 formMat.innerHTML = '';
                 materialsList.forEach(m => {
                     formMat.insertAdjacentHTML('beforeend', `<option value="${m}">${m}</option>`);
                 });
+                if (currentMatVal && Array.from(formMat.options).some(o => o.value === currentMatVal)) {
+                    formMat.value = currentMatVal;
+                }
             }
         }
 
@@ -1635,13 +1327,13 @@
                 if (f.deliveryStatus === 'entregue') {
                     availableValue += value;
                 } else if (f.deliveryStatus === 'aguardando') {
-                    transitValue += value; // Como está em trânsito, vale o preço proporcional dele
+                    transitValue += value;
                 }
             });
 
             const totalInvestmentValue = availableValue + transitValue;
 
-            // Renderizando layout com detalhes separados no mesmo card
+            // Renderizando layout com detalhes separados no mesmo card de forma reativa
             const statTotalValue = document.getElementById('stat-total-value');
             if (statTotalValue) {
                 statTotalValue.innerHTML = `
@@ -2250,7 +1942,7 @@
 
                                     <div class="bg-slate-950/40 p-2.5 rounded-xl border border-slate-850">
                                         <span class="text-amber-500 font-bold block mb-1 text-[10px] uppercase tracking-wide">
-                                            <i class="fa-solid fa-fire"></i> Resistência de Uso
+                                            <i class="fa-solid fa-fire"></i> Resistência Térmica
                                         </span>
                                         <p class="text-slate-300 text-[11px] leading-relaxed whitespace-normal break-words block w-full">${s.thermal}</p>
                                     </div>
@@ -3046,7 +2738,7 @@
 
             showCustomConfirm(
                 "Remover Projeto",
-                `Deseja realmente deletar o projeto "${project.pieceName}"? O peso dos plásticos consumidos retornará à estante de estoque!`,
+                `Deseja realmente deletar o projeto "${project.pieceName}"? O peso dos filamentos consumidos retornará à estante de estoque!`,
                 async () => {
                     if (project.filamentsUsed) {
                         project.filamentsUsed.forEach(item => {
@@ -3392,3 +3084,5 @@
     </script>
 </body>
 </html>
+```
+eof
