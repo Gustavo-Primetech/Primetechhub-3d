@@ -998,7 +998,7 @@
             <h3 class="text-base sm:text-lg font-bold text-white mb-1 flex items-center gap-2">
                 <i class="fa-solid fa-tags text-indigo-400"></i> Converter Projeto em Produto
             </h3>
-            <p class="text-xs text-slate-400 mb-4 pb-2 border-b border-slate-800">Defina o markup de lucro e as informações comerciais do produto gerado.</p>
+            <p class="text-xs text-slate-400 mb-4 pb-2 border-b border-slate-800">Define o markup de lucro e as informações comerciais do produto gerado.</p>
             
             <form onsubmit="salvarProdutoConvertido(event)" class="space-y-4">
                 <input type="hidden" id="conv-project-id" value="">
@@ -1176,7 +1176,7 @@
             tiktok: { commission: 5.0, fixed: 1.0 }
         };
 
-        // Função de notificação Toast reestabelecida
+        // Função Toast reestabelecida com estabilidade absoluta
         function showToast(message, type = 'success') {
             const container = document.getElementById('toast-container');
             if (!container) return;
@@ -2063,7 +2063,7 @@
                                     <button onclick="prepararEdicao(${f.id})" class="bg-slate-800 hover:bg-slate-750 text-indigo-400 p-2 rounded-lg transition text-xs" title="Editar">
                                         <i class="fa-solid fa-pen-to-square"></i>
                                     </button>
-                                    <button onclick="excluirFilamento(${f.id})" class="bg-slate-850 hover:bg-rose-950/35 text-rose-450 p-2 rounded-lg transition text-xs" title="Excluir">
+                                    <button onclick="excluirFilamento(${f.id})" class="bg-slate-850 hover:bg-rose-955/35 text-rose-455 p-2 rounded-lg transition text-xs" title="Excluir">
                                         <i class="fa-solid fa-trash"></i>
                                     </button>
                                 </div>
@@ -2822,15 +2822,6 @@
                     </div>
                 `;
                 container.innerHTML = tableMarkup;
-            }
-        }
-
-        function salvarConfiguracaoEnergia() {
-            const energyInput = document.getElementById('energy-rate');
-            if (energyInput) {
-                energyRate = Number(energyInput.value) || 0.85;
-                localStorage.setItem('energy_rate_db', energyRate);
-                showToast("Tarifa regional de energia elétrica salva!");
             }
         }
 
@@ -4051,5 +4042,3 @@
     </script>
 </body>
 </html>
-```
-eof
