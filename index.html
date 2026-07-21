@@ -3328,6 +3328,65 @@
             document.getElementById('project-modal').classList.remove('hidden');
         }
 
+        function duplicarProjeto(id) {
+            const project = printHistory.find(p => p.id === id);
+            if (!project) return;
+
+            const printSelect = document.getElementById('proj-printer-select');
+            if (printSelect) {
+                printSelect.innerHTML = '<option value="">Sem máquina (Sem custo elétrico)</option>';
+                printers.forEach(p => {
+                    printSelect.insertAdjacentHTML('beforeend', `<option value="${p.id}" data-watts="${p.powerWatts}">${p.name}</option>`);
+                });
+            }
+
+            document.getElementById('project-modal-title').innerHTML = `<i class="fa-solid fa-copy text-indigo-500"></i> Copiar Projeto 3D`;
+            document.getElementById('project-submit-btn').textContent = "Deduzir e Criar Projeto";
+            document.getElementById('proj-edit-id').value = ''; // ID vazio para criar novo registro
+
+            document.getElementById('proj-name').value = project.pieceName + ' (Cópia)';
+            document.getElementById('proj-notes').value = project.notes || '';
+            document.getElementById('proj-time-hours').value = project.durationHours || '';
+            document.getElementById('proj-time-minutes').value = project.durationMinutes || '';
+            
+            popularCategorias();
+            document.getElementById('proj-category').value = project.category || 'Outros';
+            document.getElementById('proj-category-custom').value = '';
+            document.getElementById('proj-category-custom').classList.add('hidden');
+
+            if (printSelect) printSelect.value = project.printerId || '';
+
+            document.getElementById('proj-filaments-container').innerHTML = '';
+            document.getElementById('proj-extras-container').innerHTML = '';
+
+            if (project.filamentsUsed && project.filamentsUsed.length > 0) {
+                project.filamentsUsed.forEach(fu => {
+                    adicionarLinhaFilamento(fu.filamentId, fu.weightUsed);
+                });
+            } else {
+                adicionarLinhaFilamento();
+            }
+
+            if (project.extraCosts && project.extraCosts.length > 0) {
+                project.extraCosts.forEach(ec => {
+                    adicionarLinhaExtra(ec.name, ec.cost);
+                });
+            }
+
+            if (project.status === 'sucesso') {
+                document.querySelector('input[name="proj-status"][value="sucesso"]').checked = true;
+                setProjRating(project.rating || 5);
+            } else {
+                document.querySelector('input[name="proj-status"][value="falha"]').checked = true;
+                document.getElementById('proj-failure-reason').value = project.failureReason || 'Descolamento da Mesa (Warping)';
+            }
+            toggleProjStatusFields();
+            recalcularTotaisProjeto();
+
+            document.getElementById('project-modal').classList.remove('hidden');
+            showToast("Dados do projeto copiados no formulário!");
+        }
+
         function excluirProjeto(id) {
             const project = printHistory.find(p => p.id === id);
             if (!project) return;
@@ -3460,8 +3519,7 @@
                 if (h.energyCost > 0) {
                     energyMarkup = `<span class="block text-[10px] text-amber-500 font-bold mt-0.5">Energia: R$ ${h.energyCost.toFixed(2).replace('.', ',')}</span>`;
                 }
-
-                tr.innerHTML = `
+                    tr.innerHTML = `
                     <td class="py-3 pl-4">
                         <span class="font-bold text-white block leading-tight text-sm">${h.pieceName}</span>
                         <span class="text-xs text-slate-400 block max-w-[200px] truncate italic" title="${h.notes || ''}">${h.notes || 'Sem observações'}</span>
@@ -3493,6 +3551,7 @@
                             ` : ''}
                             <div class="flex justify-end gap-1.5 mt-1 sm:mt-0">
                                 <button onclick="prepararEdicaoProjeto(${h.id})" class="text-indigo-400 hover:bg-slate-800 p-2 rounded transition" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button onclick="duplicarProjeto(${h.id})" class="text-indigo-400 hover:bg-slate-800 p-2 rounded transition" title="Copiar / Duplicar Projeto"><i class="fa-solid fa-copy"></i></button>
                                 <button onclick="excluirProjeto(${h.id})" class="text-rose-500 hover:bg-rose-950/30 p-2 rounded transition" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                             </div>
                         </div>
