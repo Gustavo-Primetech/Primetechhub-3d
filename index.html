@@ -1531,7 +1531,41 @@
                 }
 
                 if (remoteHistory) {
-                    printHistory = remoteHistory.map(h => ({
+                    const remoteMap = new Map(remoteHistory.map(h => [Number(h.id), h]));
+                    
+                    // Preservar e sincronizar automaticamente projetos locais pendentes
+                    const localUnsynced = printHistory.filter(h => !remoteMap.has(Number(h.id)));
+                    for (const localProj of localUnsynced) {
+                        try {
+                            const { error: syncErr } = await supabaseClient.from('print_history').upsert({
+                                id: localProj.id, user_id: currentUser.id, piece_name: localProj.pieceName, notes: localProj.notes,
+                                date: localProj.date, status: localProj.status, rating: localProj.rating,
+                                failure_reason: localProj.failureReason, duration_hours: localProj.durationHours,
+                                duration_minutes: localProj.durationMinutes, printer_id: localProj.printerId,
+                                printer_name: localProj.printerName, printer_watts: localProj.printerWatts,
+                                energy_cost: localProj.energyCost, energy_rate: localProj.energyRate,
+                                filaments_used: localProj.filamentsUsed, extra_costs: localProj.extraCosts,
+                                total_filament_cost: localProj.totalFilamentCost, total_extra_cost: localProj.totalExtraCost,
+                                grand_total_cost: localProj.grandTotalCost, category: localProj.category || 'Outros'
+                            });
+                            if (!syncErr) {
+                                remoteMap.set(Number(localProj.id), {
+                                    id: localProj.id, piece_name: localProj.pieceName, notes: localProj.notes, date: localProj.date,
+                                    status: localProj.status, rating: localProj.rating, failure_reason: localProj.failureReason,
+                                    duration_hours: localProj.durationHours, duration_minutes: localProj.durationMinutes,
+                                    printer_id: localProj.printerId, printer_name: localProj.printerName, printer_watts: localProj.printerWatts,
+                                    energy_cost: localProj.energyCost, energy_rate: localProj.energyRate,
+                                    filaments_used: localProj.filamentsUsed, extra_costs: localProj.extraCosts,
+                                    total_filament_cost: localProj.totalFilamentCost, total_extra_cost: localProj.totalExtraCost,
+                                    grand_total_cost: localProj.grandTotalCost, category: localProj.category || 'Outros'
+                                });
+                            }
+                        } catch (err) {
+                            console.error("Erro ao tentar re-sincronizar projeto pendente:", err);
+                        }
+                    }
+
+                    printHistory = Array.from(remoteMap.values()).map(h => ({
                         id: Number(h.id), pieceName: h.piece_name, notes: h.notes, date: h.date,
                         status: h.status, rating: h.rating, failureReason: h.failure_reason,
                         durationHours: Number(h.duration_hours), durationMinutes: Number(h.duration_minutes),
@@ -3243,7 +3277,7 @@
                         }
                     }
 
-                    await supabaseClient.from('print_history').upsert({
+                    const { error: upsertErr } = await supabaseClient.from('print_history').upsert({
                         id: finalProjectPayload.id, user_id: currentUser.id, piece_name: finalProjectPayload.pieceName, notes: finalProjectPayload.notes,
                         date: finalProjectPayload.date, status: finalProjectPayload.status, rating: finalProjectPayload.rating,
                         failure_reason: finalProjectPayload.failureReason, duration_hours: finalProjectPayload.durationHours,
@@ -3255,8 +3289,13 @@
                         grand_total_cost: finalProjectPayload.grandTotalCost, category: finalProjectPayload.category
                     });
 
+                    if (upsertErr) {
+                        console.error("Erro ao gravar projeto no Supabase:", upsertErr);
+                        showToast("Projeto salvo localmente, mas houve erro ao enviar para a nuvem: " + upsertErr.message, "warning");
+                    }
+
                 } catch (e) {
-                    console.error(e);
+                    console.error("Erro de conexão no salvamento do projeto:", e);
                 }
             }
 
@@ -3291,6 +3330,11 @@
             document.getElementById('proj-time-hours').value = project.durationHours || '';
             document.getElementById('proj-time-minutes').value = project.durationMinutes || '';
             
+            // Garantir que a categoria do projeto esteja na lista de categorias antes de selecionar
+            if (project.category && !categories.includes(project.category)) {
+                categories.push(project.category);
+                localStorage.setItem('categories_db', JSON.stringify(categories));
+            }
             popularCategorias();
             document.getElementById('proj-category').value = project.category || 'Outros';
             document.getElementById('proj-category-custom').value = '';
@@ -3349,6 +3393,11 @@
             document.getElementById('proj-time-hours').value = project.durationHours || '';
             document.getElementById('proj-time-minutes').value = project.durationMinutes || '';
             
+            // Garantir que a categoria do projeto esteja na lista de categorias antes de selecionar
+            if (project.category && !categories.includes(project.category)) {
+                categories.push(project.category);
+                localStorage.setItem('categories_db', JSON.stringify(categories));
+            }
             popularCategorias();
             document.getElementById('proj-category').value = project.category || 'Outros';
             document.getElementById('proj-category-custom').value = '';
